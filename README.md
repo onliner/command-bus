@@ -1,8 +1,7 @@
 Command Bus
 ---------------
 
-This is a PHP library that wraps up the server-side verification step required
-to process responses from the [GeeTest](https://www.geetest.com) service. 
+This is easy to use PHP command bus implementation.
 
 [![Version][version-badge]][version-link]
 [![Total Downloads][downloads-badge]][downloads-link]
@@ -18,13 +17,13 @@ The preferred way to install this extension is through [composer](http://getcomp
 Either run
 
 ```
-composer require onliner/commandbus:^1.0
+composer require onliner/command-bus:^1.0
 ```
 
 or add this code line to the `require` section of your `composer.json` file:
 
 ```
-"onliner/commandbus": "^1.0"
+"onliner/command-bus": "^1.0"
 ```
 
 Usage
@@ -32,7 +31,6 @@ Usage
 
 ```php
 use Onliner\CommandBus\Builder;
-use Onliner\CommandBus\Context;
 
 class Hello
 {
@@ -44,14 +42,16 @@ class Hello
     }
 }
 
-$bus = (new Builder())
+$dispatcher = (new Builder())
     ->handle(Hello::class, function (Hello $command) {
         echo 'Hello ' . $command->message;
     })
     ->build();
 
-$bus->dispatch(new Hello('onliner'));
+$dispatcher->dispatch(new Hello('onliner'));
 ```
+
+More examples can be found [here](examples).
 
 License
 -------
@@ -59,12 +59,12 @@ License
 Released under the [MIT license](LICENSE).
 
 
-[version-badge]:    https://img.shields.io/packagist/v/onliner/commandbus.svg
-[version-link]:     https://packagist.org/packages/onliner/commandbus
-[downloads-link]:   https://packagist.org/packages/onliner/commandbus
-[downloads-badge]:  https://poser.pugx.org/onliner/commandbus/downloads.png
+[version-badge]:    https://img.shields.io/packagist/v/onliner/command-bus.svg
+[version-link]:     https://packagist.org/packages/onliner/command-bus
+[downloads-link]:   https://packagist.org/packages/onliner/command-bus
+[downloads-badge]:  https://poser.pugx.org/onliner/command-bus/downloads.png
 [php-badge]:        https://img.shields.io/badge/php-7.2+-brightgreen.svg
 [php-link]:         https://www.php.net/
 [license-badge]:    https://img.shields.io/badge/license-MIT-brightgreen.svg
-[build-link]:       https://github.com/onliner/commandbus/actions?workflow=test
-[build-badge]:      https://github.com/onliner/commandbus/workflows/test/badge.svg
+[build-link]:       https://github.com/onliner/command-bus/actions?workflow=test
+[build-badge]:      https://github.com/onliner/command-bus/workflows/test/badge.svg
