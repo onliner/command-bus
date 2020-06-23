@@ -1,8 +1,7 @@
 Command Bus
 ---------------
 
-This is a PHP library that wraps up the server-side verification step required
-to process responses from the [GeeTest](https://www.geetest.com) service. 
+This is easy to use PHP command bus implementation.. 
 
 [![Version][version-badge]][version-link]
 [![Total Downloads][downloads-badge]][downloads-link]
@@ -32,7 +31,6 @@ Usage
 
 ```php
 use Onliner\CommandBus\Builder;
-use Onliner\CommandBus\Context;
 
 class Hello
 {
@@ -44,14 +42,16 @@ class Hello
     }
 }
 
-$bus = (new Builder())
+$dispatcher = (new Builder())
     ->handle(Hello::class, function (Hello $command) {
         echo 'Hello ' . $command->message;
     })
     ->build();
 
-$bus->dispatch(new Hello('onliner'));
+$dispatcher->dispatch(new Hello('onliner'));
 ```
+
+More examples can be found [here](examples).
 
 License
 -------
