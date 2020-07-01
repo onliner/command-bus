@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Onliner\CommandBus\Tests\Remote\Transport;
+namespace Onliner\CommandBus\Tests\Remote\InMemory;
 
 use Onliner\CommandBus\Remote\Envelope;
-use Onliner\CommandBus\Remote\Transport\MemoryTransport;
+use Onliner\CommandBus\Remote\InMemory\InMemoryTransport;
 use PHPUnit\Framework\TestCase;
 
-class MemoryTransportTest extends TestCase
+class InMemoryTransportTest extends TestCase
 {
     public function testSendReceive(): void
     {
-        $transport = new MemoryTransport();
+        $transport = new InMemoryTransport();
         $envelope = new Envelope('target', 'payload', [
             'foo' => 'bar',
         ]);

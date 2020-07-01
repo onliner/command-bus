@@ -6,6 +6,7 @@ namespace Onliner\CommandBus\Remote;
 
 use Bunny\Client;
 use Onliner\CommandBus\Builder;
+use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Extension;
 
 final class RemoteExtension implements Extension
@@ -31,7 +32,7 @@ final class RemoteExtension implements Extension
      */
     public function __construct(Transport $transport = null, Serializer $serializer = null)
     {
-        $this->transport  = $transport ?? new Transport\MemoryTransport();
+        $this->transport  = $transport ?? new InMemory\InMemoryTransport();
         $this->serializer = $serializer ?? new Serializer\NativeSerializer();
     }
 
@@ -54,5 +55,9 @@ final class RemoteExtension implements Extension
         $gateway = new Gateway($this->transport, $this->serializer);
 
         $builder->middleware(new RemoteMiddleware($gateway, $this->routes));
+
+        $builder->handle(Envelope::class, function (Envelope $envelope, Context $context) use ($gateway) {
+            $gateway->receive($envelope, $context);
+        });
     }
 }

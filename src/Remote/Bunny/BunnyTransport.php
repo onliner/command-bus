@@ -2,16 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Onliner\CommandBus\Remote\Transport;
+namespace Onliner\CommandBus\Remote\Bunny;
 
 use InvalidArgumentException;
 use Bunny\Channel;
 use Bunny\Client;
+use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
 
 final class BunnyTransport implements Transport
 {
+    /**
+     * @var string
+     */
+    private $origin;
+
     /**
      * @var Client
      */
@@ -23,19 +29,22 @@ final class BunnyTransport implements Transport
     private $channel;
 
     /**
+     * @param string $origin
      * @param Client $client
      */
-    public function __construct(Client $client)
+    public function __construct(string $origin, Client $client)
     {
+        $this->origin = $origin;
         $this->client = $client;
     }
 
     /**
+     * @param string $origin
      * @param string $dsn
      *
      * @return self
      */
-    public static function create(string $dsn): self
+    public static function create(string $origin, string $dsn): self
     {
         if (!$components = parse_url($dsn)) {
             throw new InvalidArgumentException('Invalid transport DSN');
@@ -47,7 +56,7 @@ final class BunnyTransport implements Transport
             parse_str($components['query'], $options);
         }
 
-        return new self(new Client($components + $options));
+        return new self($origin, new Client($components + $options));
     }
 
     /**
@@ -56,6 +65,14 @@ final class BunnyTransport implements Transport
     public function send(string $queue, Envelope $envelope): void
     {
         $this->channel()->publish($envelope->payload, $envelope->headers, $envelope->target, $queue);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function consume(): Consumer
+    {
+        return new BunnyConsumer($this->origin, $this->client);
     }
 
     /**

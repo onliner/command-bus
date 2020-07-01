@@ -11,4 +11,9 @@ interface Transport
      * @param Envelope $envelope
      */
     public function send(string $queue, Envelope $envelope): void;
+
+    /**
+     * @return Consumer
+     */
+    public function consume(): Consumer;
 }

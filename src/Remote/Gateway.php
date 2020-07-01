@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote;
 
+use Onliner\CommandBus\Context;
+
 final class Gateway
 {
     /**
@@ -39,6 +41,20 @@ final class Gateway
         $envelope = new Envelope($target, $payload, $headers);
 
         $this->transport->send($this->queueName($message), $envelope);
+    }
+
+    /**
+     * @param Envelope $envelope
+     * @param Context  $context
+     *
+     * @return void
+     */
+    public function receive(Envelope $envelope, Context $context): void
+    {
+        $message = $this->serializer->unserialize($envelope->payload);
+        $options = $envelope->headers;
+
+        $context->dispatch($message, $options);
     }
 
     /**
