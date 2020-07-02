@@ -16,12 +16,12 @@ final class InMemoryConsumer implements Consumer
     private $envelopes = [];
 
     /**
-     * @var string
+     * @var string|null
      */
     private $queue;
 
     /**
-     * @var Dispatcher
+     * @var Dispatcher|null
      */
     private $dispatcher;
 
@@ -33,7 +33,7 @@ final class InMemoryConsumer implements Consumer
      */
     public function put(string $queue, Envelope $envelope): void
     {
-        if ($this->dispatcher && fnmatch ($this->queue, $queue)) {
+        if ($this->dispatcher && $this->queue && fnmatch($this->queue, $queue)) {
             $this->dispatcher->dispatch($envelope);
         } else {
             $this->envelopes[$queue][] = $envelope;
@@ -48,7 +48,15 @@ final class InMemoryConsumer implements Consumer
         $this->queue      = $queue;
         $this->dispatcher = $dispatcher;
 
-        $this->dispatch();
+        foreach ($this->envelopes as $queue => $items) {
+            if (!fnmatch($this->queue, $queue)) {
+                continue;
+            }
+
+            while ($envelope = array_shift($items)) {
+                $this->dispatcher->dispatch($envelope);
+            }
+        }
     }
 
     /**
@@ -67,21 +75,5 @@ final class InMemoryConsumer implements Consumer
     public function receive(string $queue): array
     {
         return $this->envelopes[$queue] ?? [];
-    }
-
-    /**
-     * @return void
-     */
-    private function dispatch(): void
-    {
-        foreach ($this->envelopes as $queue => $items) {
-            if (!fnmatch ($this->queue, $queue)) {
-                continue;
-            }
-
-            while ($envelope = array_shift($items)) {
-                $this->dispatcher->dispatch($envelope);
-            }
-        }
     }
 }
