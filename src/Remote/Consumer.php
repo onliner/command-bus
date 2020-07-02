@@ -8,5 +8,16 @@ use Onliner\CommandBus\Dispatcher;
 
 interface Consumer
 {
-    public function run(string $queue, Dispatcher $dispatcher);
+    /**
+     * @param string     $queue
+     * @param Dispatcher $dispatcher
+     *
+     * @return void
+     */
+    public function run(string $queue, Dispatcher $dispatcher): void;
+
+    /**
+     * @return void
+     */
+    public function stop(): void;
 }

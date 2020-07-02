@@ -43,12 +43,20 @@ final class InMemoryConsumer implements Consumer
     /**
      * {@inheritDoc}
      */
-    public function run(string $queue, Dispatcher $dispatcher)
+    public function run(string $queue, Dispatcher $dispatcher): void
     {
         $this->queue      = $queue;
         $this->dispatcher = $dispatcher;
 
         $this->dispatch();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function stop(): void
+    {
+        $this->queue = $this->dispatcher = null;
     }
 
     /**

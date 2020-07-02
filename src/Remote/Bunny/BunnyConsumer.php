@@ -71,6 +71,14 @@ final class BunnyConsumer implements Consumer
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function stop(): void
+    {
+        $this->client->stop();
+    }
+
+    /**
      * @param Message    $message
      * @param Channel    $channel
      * @param Dispatcher $dispatcher
