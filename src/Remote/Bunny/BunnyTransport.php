@@ -14,14 +14,14 @@ use Onliner\CommandBus\Remote\Transport;
 final class BunnyTransport implements Transport
 {
     /**
-     * @var string
-     */
-    private $origin;
-
-    /**
      * @var Client
      */
     private $client;
+
+    /**
+     * @var ExchangeOptions
+     */
+    private $options;
 
     /**
      * @var ?Channel
@@ -29,42 +29,49 @@ final class BunnyTransport implements Transport
     private $channel;
 
     /**
-     * @param string $origin
-     * @param Client $client
+     * @param Client          $client
+     * @param ExchangeOptions $options
      */
-    public function __construct(string $origin, Client $client)
+    public function __construct(Client $client, ExchangeOptions $options)
     {
-        $this->origin = $origin;
-        $this->client = $client;
+        $this->client  = $client;
+        $this->options = $options;
     }
 
     /**
-     * @param string $origin
-     * @param string $dsn
+     * @param string               $dsn
+     * @param ExchangeOptions|null $options
      *
      * @return self
      */
-    public static function create(string $origin, string $dsn): self
+    public static function create(string $dsn, ExchangeOptions $options = null): self
     {
         if (!$components = parse_url($dsn)) {
             throw new InvalidArgumentException('Invalid transport DSN');
         }
 
-        $options = [];
+        $query = [];
 
         if (isset($components['query'])) {
-            parse_str($components['query'], $options);
+            parse_str($components['query'], $query);
         }
 
-        return new self($origin, new Client($components + $options));
+        return new self(new Client($components + $query), $options ?? ExchangeOptions::create());
     }
 
     /**
      * {@inheritDoc}
      */
-    public function send(string $queue, Envelope $envelope): void
+    public function send(string $route, Envelope $envelope): void
     {
-        $this->channel()->publish($envelope->payload, $envelope->headers, $envelope->target, $queue);
+        $this->channel()->publish(
+            $envelope->payload,
+            $envelope->headers,
+            $envelope->target,
+            $route,
+            $this->options->is(ExchangeOptions::FLAG_MANDATORY),
+            $this->options->is(ExchangeOptions::FLAG_IMMEDIATE)
+        );
     }
 
     /**
@@ -72,7 +79,15 @@ final class BunnyTransport implements Transport
      */
     public function consume(): Consumer
     {
-        return new BunnyConsumer($this->origin, $this->client);
+        return new BunnyConsumer($this->client, $this->options);
+    }
+
+    /**
+     * @return string
+     */
+    public function exchange(): string
+    {
+        return $this->options->exchange();
     }
 
     /**
