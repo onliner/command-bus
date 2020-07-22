@@ -2,23 +2,15 @@
 
 declare(strict_types=1);
 
-use Bunny\Client;
+use Onliner\CommandBus\Remote\Bunny\BunnyConsumer;
 use Onliner\CommandBus\Remote\Bunny\BunnyTransport;
+use Onliner\CommandBus\Remote\Bunny\ExchangeOptions;
 
 $dispatcher = require __DIR__ . '/dispatcher.php';
 
-$transport = new BunnyTransport('mailer', new Client());
+$transport = BunnyTransport::create('amqp://guest:guest@localhost:5672', new ExchangeOptions('mailer'));
 
+/** @var BunnyConsumer $consumer */
 $consumer = $transport->consume();
-$consumer->run('#', $dispatcher);
-
-
-
-
-
-//
-//// SETUP RABBIT
-//$client->connect();
-//
-//$channel = $client->channel();
-//
+$consumer->bind( '#');
+$consumer->run($dispatcher);

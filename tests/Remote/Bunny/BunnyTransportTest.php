@@ -7,6 +7,7 @@ namespace Onliner\CommandBus\Tests\Remote\Bunny;
 use Bunny\Channel;
 use Bunny\Client;
 use InvalidArgumentException;
+use Onliner\CommandBus\Remote\Bunny\ExchangeOptions;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Bunny\BunnyTransport;
 use PHPUnit\Framework\TestCase;
@@ -18,7 +19,7 @@ class BunnyTransportTest extends TestCase
         $error = null;
 
         try {
-            BunnyTransport::create('project', 'amqp://guest:guest@localhost/vhost?timeout=1&foo=bar');
+            BunnyTransport::create('amqp://guest:guest@localhost/vhost?timeout=1&foo=bar');
         } catch (InvalidArgumentException $error) {
         }
 
@@ -30,7 +31,7 @@ class BunnyTransportTest extends TestCase
         self::expectException(InvalidArgumentException::class);
         self::expectExceptionMessage('Invalid transport DSN');
 
-        BunnyTransport::create('project', '//');
+        BunnyTransport::create('//');
     }
 
     public function testSend(): void
@@ -65,7 +66,7 @@ class BunnyTransportTest extends TestCase
             ->willReturn($channel)
         ;
 
-        $transport = new BunnyTransport('project', $client);
+        $transport = new BunnyTransport($client, ExchangeOptions::create());
 
         $transport->send($queue, $envelope);
         $transport->send($queue, $envelope);

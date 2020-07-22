@@ -11,14 +11,14 @@ use Onliner\CommandBus\Remote\Envelope;
 final class InMemoryConsumer implements Consumer
 {
     /**
+     * @var string
+     */
+    private $pattern;
+
+    /**
      * @var array<string, array<Envelope>>
      */
     private $envelopes = [];
-
-    /**
-     * @var string|null
-     */
-    private $queue;
 
     /**
      * @var Dispatcher|null
@@ -26,30 +26,22 @@ final class InMemoryConsumer implements Consumer
     private $dispatcher;
 
     /**
-     * @param string   $queue
-     * @param Envelope $envelope
-     *
-     * @return void
+     * @param string $pattern
      */
-    public function put(string $queue, Envelope $envelope): void
+    public function __construct(string $pattern = '*')
     {
-        if ($this->dispatcher && $this->queue && fnmatch($this->queue, $queue)) {
-            $this->dispatcher->dispatch($envelope);
-        } else {
-            $this->envelopes[$queue][] = $envelope;
-        }
+        $this->pattern = $pattern;
     }
 
     /**
      * {@inheritDoc}
      */
-    public function run(string $queue, Dispatcher $dispatcher): void
+    public function run(Dispatcher $dispatcher): void
     {
-        $this->queue      = $queue;
         $this->dispatcher = $dispatcher;
 
-        foreach ($this->envelopes as $queue => $items) {
-            if (!fnmatch($this->queue, $queue)) {
+        foreach ($this->envelopes as $route => $items) {
+            if (!fnmatch($this->pattern, $route)) {
                 continue;
             }
 
@@ -64,16 +56,31 @@ final class InMemoryConsumer implements Consumer
      */
     public function stop(): void
     {
-        $this->queue = $this->dispatcher = null;
+        $this->dispatcher = null;
     }
 
     /**
-     * @param string $queue
+     * @param string   $route
+     * @param Envelope $envelope
+     *
+     * @return void
+     */
+    public function put(string $route, Envelope $envelope): void
+    {
+        if ($this->dispatcher && fnmatch($this->pattern, $route)) {
+            $this->dispatcher->dispatch($envelope);
+        } else {
+            $this->envelopes[$route][] = $envelope;
+        }
+    }
+
+    /**
+     * @param string $route
      *
      * @return array<Envelope>
      */
-    public function receive(string $queue): array
+    public function receive(string $route): array
     {
-        return $this->envelopes[$queue] ?? [];
+        return $this->envelopes[$route] ?? [];
     }
 }

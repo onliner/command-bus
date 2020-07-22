@@ -9,12 +9,11 @@ use Onliner\CommandBus\Dispatcher;
 interface Consumer
 {
     /**
-     * @param string     $queue
      * @param Dispatcher $dispatcher
      *
      * @return void
      */
-    public function run(string $queue, Dispatcher $dispatcher): void;
+    public function run(Dispatcher $dispatcher): void;
 
     /**
      * @return void

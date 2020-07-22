@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\Bunny;
 
-use Exception;
+use Bunny\Protocol\MethodQueueDeclareOkFrame;
+use Generator;
 use Bunny\Client;
 use Bunny\Channel;
 use Bunny\Message;
@@ -21,51 +22,47 @@ final class BunnyConsumer implements Consumer
     ;
 
     /**
-     * @var string
-     */
-    private $origin;
-
-    /**
      * @var Client
      */
     private $client;
 
     /**
-     * @param string $origin
-     * @param Client $client
+     * @var ExchangeOptions
      */
-    public function __construct(string $origin, Client $client)
+    private $config;
+
+    /**
+     * @var array<string>
+     */
+    private $routes = [];
+
+    /**
+     * @param Client $client
+     * @param ExchangeOptions $config
+     */
+    public function __construct(Client $client, ExchangeOptions $config)
     {
-        $this->origin = $origin;
         $this->client = $client;
+        $this->config = $config;
     }
 
     /**
-     * @param string     $queue
-     * @param Dispatcher $dispatcher
-     *
-     * @return void
-     * @throws Exception
+     * {@inheritDoc}
      */
-    public function run(string $queue, Dispatcher $dispatcher): void
+    public function run(Dispatcher $dispatcher): void
     {
         if (!$this->client->isConnected()) {
             $this->client->connect();
         }
 
-        $name = md5($queue);
-
         /** @var Channel $channel */
         $channel = $this->client->channel();
 
-        $channel->exchangeDeclare($this->origin, 'topic', false, true);
-
-        $channel->queueDeclare($name);
-        $channel->queueBind($name, $this->origin, $queue);
-
-        $channel->consume(function (Message $message, Channel $channel) use ($dispatcher) {
-            $this->handle($message, $channel, $dispatcher);
-        }, $name);
+        foreach ($this->setup($channel) as $queue) {
+            $channel->consume(function (Message $message, Channel $channel) use ($dispatcher) {
+                $this->handle($message, $channel, $dispatcher);
+            }, $queue);
+        }
 
         $this->client->run();
     }
@@ -76,6 +73,18 @@ final class BunnyConsumer implements Consumer
     public function stop(): void
     {
         $this->client->stop();
+    }
+
+    /**
+     * @param string $route
+     *
+     * @return self
+     */
+    public function bind(string $route): self
+    {
+        $this->routes[] = $route;
+
+        return $this;
     }
 
     /**
@@ -92,9 +101,39 @@ final class BunnyConsumer implements Consumer
                 self::OPTION_DELIVERY_TAG => $message->deliveryTag,
             ]);
 
-            $dispatcher->dispatch(new Envelope($this->origin, $message->content, $options));
+            $dispatcher->dispatch(new Envelope($message->exchange, $message->content, $options));
         } finally {
             $channel->ack($message);
+        }
+    }
+
+    /**
+     * @param Channel $channel
+     *
+     * @return Generator<string>
+     */
+    private function setup(Channel $channel): Generator
+    {
+        $exchange = $this->config->exchange();
+
+        $channel->exchangeDeclare(
+            $exchange,
+            $this->config->type(),
+            $this->config->is(ExchangeOptions::FLAG_PASSIVE),
+            $this->config->is(ExchangeOptions::FLAG_DURABLE),
+            $this->config->is(ExchangeOptions::FLAG_DELETE),
+            $this->config->is(ExchangeOptions::FLAG_INTERNAL),
+            $this->config->is(ExchangeOptions::FLAG_NO_WAIT),
+            $this->config->args()
+        );
+
+        foreach ($this->routes as $route) {
+            /** @var MethodQueueDeclareOkFrame $frame */
+            $frame = $channel->queueDeclare();
+
+            $channel->queueBind($frame->queue, $exchange, $route);
+
+            yield $frame->queue;
         }
     }
 }

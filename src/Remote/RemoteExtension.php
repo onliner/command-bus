@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote;
 
-use Bunny\Client;
 use Onliner\CommandBus\Builder;
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Extension;

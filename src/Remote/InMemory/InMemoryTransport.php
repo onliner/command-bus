@@ -23,9 +23,9 @@ final class InMemoryTransport implements Transport
     /**
      * {@inheritDoc}
      */
-    public function send(string $queue, Envelope $envelope): void
+    public function send(string $route, Envelope $envelope): void
     {
-        $this->consumer->put($queue, $envelope);
+        $this->consumer->put($route, $envelope);
     }
 
     /**
