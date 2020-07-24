@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\Bunny;
 
-use Bunny\Protocol\MethodQueueDeclareOkFrame;
 use Generator;
 use Bunny\Client;
 use Bunny\Channel;
@@ -128,12 +127,12 @@ final class BunnyConsumer implements Consumer
         );
 
         foreach ($this->routes as $route) {
-            /** @var MethodQueueDeclareOkFrame $frame */
-            $frame = $channel->queueDeclare();
+            $queue = md5($route);
 
-            $channel->queueBind($frame->queue, $exchange, $route);
+            $channel->queueDeclare($queue);
+            $channel->queueBind($queue, $exchange, $route);
 
-            yield $frame->queue;
+            yield $queue;
         }
     }
 }
