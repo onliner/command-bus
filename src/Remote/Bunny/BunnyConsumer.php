@@ -28,7 +28,7 @@ final class BunnyConsumer implements Consumer
     /**
      * @var ExchangeOptions
      */
-    private $config;
+    private $options;
 
     /**
      * @var array<string>
@@ -37,12 +37,12 @@ final class BunnyConsumer implements Consumer
 
     /**
      * @param Client $client
-     * @param ExchangeOptions $config
+     * @param ExchangeOptions $options
      */
-    public function __construct(Client $client, ExchangeOptions $config)
+    public function __construct(Client $client, ExchangeOptions $options)
     {
-        $this->client = $client;
-        $this->config = $config;
+        $this->client  = $client;
+        $this->options = $options;
     }
 
     /**
@@ -113,23 +113,22 @@ final class BunnyConsumer implements Consumer
      */
     private function setup(Channel $channel): Generator
     {
-        $exchange = $this->config->exchange();
+        $exchange  = $this->options->exchange();
+        $type      = $this->options->type();
+        $passive   = $this->options->is(ExchangeOptions::FLAG_PASSIVE);
+        $durable   = $this->options->is(ExchangeOptions::FLAG_DURABLE);
+        $delete    = $this->options->is(ExchangeOptions::FLAG_DELETE);
+        $internal  = $this->options->is(ExchangeOptions::FLAG_INTERNAL);
+        $exclusive = $this->options->is(ExchangeOptions::FLAG_EXCLUSIVE);
+        $noWait    = $this->options->is(ExchangeOptions::FLAG_NO_WAIT);
+        $arguments = $this->options->args();
 
-        $channel->exchangeDeclare(
-            $exchange,
-            $this->config->type(),
-            $this->config->is(ExchangeOptions::FLAG_PASSIVE),
-            $this->config->is(ExchangeOptions::FLAG_DURABLE),
-            $this->config->is(ExchangeOptions::FLAG_DELETE),
-            $this->config->is(ExchangeOptions::FLAG_INTERNAL),
-            $this->config->is(ExchangeOptions::FLAG_NO_WAIT),
-            $this->config->args()
-        );
+        $channel->exchangeDeclare($exchange, $type, $passive, $durable, $delete, $internal, $noWait, $arguments);
 
         foreach ($this->routes as $route) {
             $queue = md5($route);
 
-            $channel->queueDeclare($queue);
+            $channel->queueDeclare($queue, $passive, $durable, $exclusive, $delete, $noWait);
             $channel->queueBind($queue, $exchange, $route);
 
             yield $queue;

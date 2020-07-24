@@ -19,9 +19,10 @@ class ExchangeOptions
         FLAG_DURABLE   = 2,
         FLAG_DELETE    = 4,
         FLAG_INTERNAL  = 8,
-        FLAG_NO_WAIT   = 16,
-        FLAG_MANDATORY = 32,
-        FLAG_IMMEDIATE = 64
+        FLAG_EXCLUSIVE = 16,
+        FLAG_NO_WAIT   = 32,
+        FLAG_MANDATORY = 64,
+        FLAG_IMMEDIATE = 128
     ;
 
     private const OPTIONS = [
@@ -29,6 +30,7 @@ class ExchangeOptions
         'durable'   => self::FLAG_DURABLE,
         'delete'    => self::FLAG_DELETE,
         'internal'  => self::FLAG_INTERNAL,
+        'exclusive' => self::FLAG_EXCLUSIVE,
         'no_wait'   => self::FLAG_NO_WAIT,
         'mandatory' => self::FLAG_MANDATORY,
         'immediate' => self::FLAG_IMMEDIATE,
