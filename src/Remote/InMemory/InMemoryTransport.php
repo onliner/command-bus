@@ -4,28 +4,29 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\InMemory;
 
+use Onliner\CommandBus\Dispatcher;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
 
-final class InMemoryTransport implements Transport
+final class InMemoryTransport implements Transport, Consumer
 {
     /**
-     * @var InMemoryConsumer
+     * @var array<string, array<Envelope>>
      */
-    private $consumer;
+    private $envelopes = [];
 
-    public function __construct()
-    {
-        $this->consumer = new InMemoryConsumer();
-    }
+    /**
+     * @var bool
+     */
+    private $running = false;
 
     /**
      * {@inheritDoc}
      */
     public function send(string $route, Envelope $envelope): void
     {
-        $this->consumer->put($route, $envelope);
+        $this->envelopes[$route][] = $envelope;
     }
 
     /**
@@ -33,16 +34,62 @@ final class InMemoryTransport implements Transport
      */
     public function consume(): Consumer
     {
-        return $this->consumer;
+        return $this;
     }
 
     /**
-     * @param string $queue
+     * {@inheritDoc}
+     */
+    public function start(Dispatcher $dispatcher): void
+    {
+        $this->running = true;
+
+        foreach ($this->envelopes as $route => $items) {
+            foreach ($items as $i => $item) {
+                if (!$this->running()) {
+                    break 2;
+                }
+
+                try {
+                    $dispatcher->dispatch($item);
+                } finally {
+                    unset($this->envelopes[$route][$i]);
+                }
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function stop(): void
+    {
+        $this->running = false;
+    }
+
+    /**
+     * @return bool
+     */
+    public function running(): bool
+    {
+        return $this->running;
+    }
+
+    /**
+     * @return bool
+     */
+    public function empty(): bool
+    {
+        return empty($this->envelopes);
+    }
+
+    /**
+     * @param string $route
      *
      * @return array<Envelope>
      */
-    public function receive(string $queue): array
+    public function receive(string $route): array
     {
-        return $this->consumer->receive($queue);
+        return $this->envelopes[$route] ?? [];
     }
 }

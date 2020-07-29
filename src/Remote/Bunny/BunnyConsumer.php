@@ -11,6 +11,8 @@ use Bunny\Message;
 use Onliner\CommandBus\Dispatcher;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 final class BunnyConsumer implements Consumer
 {
@@ -31,24 +33,31 @@ final class BunnyConsumer implements Consumer
     private $options;
 
     /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    /**
      * @var array<string>
      */
     private $routes = [];
 
     /**
-     * @param Client $client
+     * @param Client          $client
      * @param ExchangeOptions $options
+     * @param LoggerInterface $logger
      */
-    public function __construct(Client $client, ExchangeOptions $options)
+    public function __construct(Client $client, ExchangeOptions $options, LoggerInterface $logger)
     {
         $this->client  = $client;
         $this->options = $options;
+        $this->logger  = $logger;
     }
 
     /**
      * {@inheritDoc}
      */
-    public function run(Dispatcher $dispatcher): void
+    public function start(Dispatcher $dispatcher): void
     {
         if (!$this->client->isConnected()) {
             $this->client->connect();
@@ -71,7 +80,11 @@ final class BunnyConsumer implements Consumer
      */
     public function stop(): void
     {
-        $this->client->stop();
+        try {
+            $this->client->stop();
+        } catch (Throwable $error) {
+            $this->logger->error($error->getMessage());
+        }
     }
 
     /**

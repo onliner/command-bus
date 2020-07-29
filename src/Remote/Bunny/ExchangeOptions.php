@@ -75,7 +75,7 @@ class ExchangeOptions
      *
      * @return self
      */
-    public static function create(array $options = []): self
+    public static function create(array $options): self
     {
         $type     = $options['type'] ?? self::TYPE_DELAYED;
         $exchange = $options['exchange'] ?? sprintf('amqp.%s', $type);
@@ -93,6 +93,14 @@ class ExchangeOptions
         }
 
         return new self($exchange, $type, $flags, $args);
+    }
+
+    /**
+     * @return self
+     */
+    public static function default(): self
+    {
+        return self::create([]);
     }
 
     /**
