@@ -66,8 +66,7 @@ class BunnyTransportTest extends TestCase
             ->willReturn($channel)
         ;
 
-        $transport = new BunnyTransport($client, ExchangeOptions::create());
-
+        $transport = new BunnyTransport($client);
         $transport->send($queue, $envelope);
         $transport->send($queue, $envelope);
     }

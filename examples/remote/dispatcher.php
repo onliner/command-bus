@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Bunny\Client;
 use Onliner\CommandBus\Builder;
 use Onliner\CommandBus\Remote\Bunny\BunnyTransport;
 use Onliner\CommandBus\Remote\Bunny\ExchangeOptions;

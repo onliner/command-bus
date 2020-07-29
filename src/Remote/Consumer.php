@@ -13,7 +13,7 @@ interface Consumer
      *
      * @return void
      */
-    public function run(Dispatcher $dispatcher): void;
+    public function start(Dispatcher $dispatcher): void;
 
     /**
      * @return void

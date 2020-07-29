@@ -13,4 +13,4 @@ $transport = BunnyTransport::create('amqp://guest:guest@localhost:5672', new Exc
 /** @var BunnyConsumer $consumer */
 $consumer = $transport->consume();
 $consumer->bind( '#');
-$consumer->run($dispatcher);
+$consumer->start($dispatcher);
