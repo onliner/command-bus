@@ -76,6 +76,14 @@ final class InMemoryTransport implements Transport, Consumer
     }
 
     /**
+     * @return void
+     */
+    public function clear(): void
+    {
+        $this->envelopes = [];
+    }
+
+    /**
      * @return bool
      */
     public function empty(): bool
