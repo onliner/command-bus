@@ -72,7 +72,11 @@ final class BunnyConsumer implements Consumer
             }, $queue);
         }
 
-        $this->client->run();
+        try {
+            $this->client->run();
+        } catch (Throwable $error) {
+            $this->logger->error($error->getMessage());
+        }
     }
 
     /**
@@ -80,11 +84,7 @@ final class BunnyConsumer implements Consumer
      */
     public function stop(): void
     {
-        try {
-            $this->client->stop();
-        } catch (Throwable $error) {
-            $this->logger->error($error->getMessage());
-        }
+        $this->client->stop();
     }
 
     /**

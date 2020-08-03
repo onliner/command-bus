@@ -43,8 +43,6 @@ final class YieldMiddleware implements Middleware
         try {
             $context->dispatch($current);
         } catch (Throwable $error) {
-            // https://github.com/phpstan/phpstan/issues/3418
-            /* @phpstan-ignore-next-line */
             $generator->throw($error);
 
             return;
