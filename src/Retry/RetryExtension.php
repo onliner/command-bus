@@ -10,9 +10,22 @@ use Onliner\CommandBus\Extension;
 final class RetryExtension implements Extension
 {
     /**
+     * @var Policy
+     */
+    private $default;
+
+    /**
      * @var array<string, Policy>
      */
     private $policies = [];
+
+    /**
+     * @param Policy|null $default
+     */
+    public function __construct(Policy $default = null)
+    {
+        $this->default = $default ?? new ThrowPolicy;
+    }
 
     /**
      * @param string $class
@@ -30,6 +43,6 @@ final class RetryExtension implements Extension
      */
     public function setup(Builder $builder, array $options): void
     {
-        $builder->middleware(new RetryMiddleware($this->policies));
+        $builder->middleware(new RetryMiddleware($this->default, $this->policies));
     }
 }
