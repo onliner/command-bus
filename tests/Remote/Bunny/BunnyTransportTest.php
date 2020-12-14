@@ -36,16 +36,19 @@ class BunnyTransportTest extends TestCase
 
     public function testSend(): void
     {
-        $queue    = 'queue';
         $envelope = new Envelope('target', 'payload', [
             'foo' => 'bar',
         ]);
+
+        $headers = $envelope->headers + [
+            'x-message-type' => $envelope->type,
+        ];
 
         $channel = self::createMock(Channel::class);
         $channel
             ->expects(self::exactly(2))
             ->method('publish')
-            ->with($envelope->payload, $envelope->headers, $envelope->target, $queue)
+            ->with($envelope->payload, $headers, 'amqp.topic', $envelope->type)
         ;
 
         $client = self::createMock(Client::class);
@@ -67,7 +70,7 @@ class BunnyTransportTest extends TestCase
         ;
 
         $transport = new BunnyTransport($client);
-        $transport->send($queue, $envelope);
-        $transport->send($queue, $envelope);
+        $transport->send($envelope);
+        $transport->send($envelope);
     }
 }

@@ -7,16 +7,17 @@ namespace Onliner\CommandBus\Remote;
 interface Serializer
 {
     /**
-     * @param object $command
+     * @param object               $command
+     * @param array<string, mixed> $headers
      *
-     * @return string
+     * @return Envelope
      */
-    public function serialize(object $command): string;
+    public function serialize(object $command, array $headers = []): Envelope;
 
     /**
-     * @param string $data
+     * @param Envelope $envelope
      *
      * @return object
      */
-    public function unserialize(string $data): object;
+    public function unserialize(Envelope $envelope): object;
 }

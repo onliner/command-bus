@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\Bunny;
 
-class ExchangeOptions
+final class ExchangeOptions
 {
     public const
         TYPE_TOPIC   = 'topic',
@@ -12,6 +12,15 @@ class ExchangeOptions
         TYPE_DIRECT  = 'direct',
         TYPE_HEADERS = 'headers',
         TYPE_DELAYED = 'x-delayed-message'
+    ;
+
+    public const
+        HEADER_EXCHANGE     = 'exchange',
+        HEADER_ROUTING_KEY  = 'routing_key',
+        HEADER_CONSUMER_TAG = 'consumer_tag',
+        HEADER_DELIVERY_TAG = 'delivery_tag',
+        HEADER_REDELIVERED  = 'redelivered',
+        HEADER_MESSAGE_TYPE = 'x-message-type'
     ;
 
     public const
@@ -77,7 +86,7 @@ class ExchangeOptions
      */
     public static function create(array $options): self
     {
-        $type     = $options['type'] ?? self::TYPE_DELAYED;
+        $type     = $options['type'] ?? self::TYPE_TOPIC;
         $exchange = $options['exchange'] ?? sprintf('amqp.%s', $type);
         $args     = $options['args'] ?? [];
         $flags    = 0;

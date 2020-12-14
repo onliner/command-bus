@@ -7,10 +7,9 @@ namespace Onliner\CommandBus\Remote;
 interface Transport
 {
     /**
-     * @param string   $route
      * @param Envelope $envelope
      */
-    public function send(string $route, Envelope $envelope): void;
+    public function send(Envelope $envelope): void;
 
     /**
      * @return Consumer

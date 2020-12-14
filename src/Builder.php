@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus;
 
-use Onliner\CommandBus\Resolver\ClassMapResolver;
+use Onliner\CommandBus\Resolver\CallableResolver;
 use Onliner\CommandBus\Resolver\MiddlewareResolver;
 
 final class Builder
@@ -62,17 +62,15 @@ final class Builder
     }
 
     /**
-     * @param array<mixed> $options
-     *
      * @return Dispatcher
      */
-    public function build(array $options = []): Dispatcher
+    public function build(): Dispatcher
     {
         foreach ($this->extensions as $extension) {
-            $extension->setup($this, $options);
+            $extension->setup($this);
         }
 
-        $resolver = new ClassMapResolver();
+        $resolver = new CallableResolver();
 
         foreach ($this->handlers as $command => $handler) {
             $resolver->register($command, $handler);

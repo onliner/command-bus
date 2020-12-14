@@ -10,10 +10,8 @@ interface Consumer
 {
     /**
      * @param Dispatcher $dispatcher
-     *
-     * @return void
      */
-    public function start(Dispatcher $dispatcher): void;
+    public function run(Dispatcher $dispatcher): void;
 
     /**
      * @return void

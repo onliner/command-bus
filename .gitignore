@@ -1,5 +1,5 @@
-vendor
-build
 .idea
 .vscode
+vendor
+tmp
 composer.lock

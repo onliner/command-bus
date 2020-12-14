@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Onliner\CommandBus\Remote;
 
 use Onliner\CommandBus\Builder;
-use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Extension;
 
 final class RemoteExtension implements Extension
@@ -21,13 +20,15 @@ final class RemoteExtension implements Extension
     private $serializer;
 
     /**
-     * @var array<string, string>
+     * @var array<string>
      */
-    private $routes = [];
+    private $local = [
+        Envelope::class,
+    ];
 
     /**
-     * @param Transport  $transport
-     * @param Serializer $serializer
+     * @param Transport|null  $transport
+     * @param Serializer|null $serializer
      */
     public function __construct(Transport $transport = null, Serializer $serializer = null)
     {
@@ -36,27 +37,23 @@ final class RemoteExtension implements Extension
     }
 
     /**
-     * @param string $message
-     * @param string $exchange
+     * @param string ...$local
      *
      * @return void
      */
-    public function route(string $message, string $exchange): void
+    public function local(string ...$local): void
     {
-        $this->routes[$message] = $exchange;
+        $this->local = array_unique(array_merge($this->local, $local));
     }
 
     /**
      * {@inheritDoc}
      */
-    public function setup(Builder $builder, array $options): void
+    public function setup(Builder $builder): void
     {
         $gateway = new Gateway($this->transport, $this->serializer);
 
-        $builder->middleware(new RemoteMiddleware($gateway, $this->routes));
-
-        $builder->handle(Envelope::class, function (Envelope $envelope, Context $context) use ($gateway) {
-            $gateway->receive($envelope, $context);
-        });
+        $builder->middleware(new RemoteMiddleware($gateway, $this->local));
+        $builder->handle(Envelope::class, [$gateway, 'receive']);
     }
 }

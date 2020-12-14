@@ -1,8 +1,11 @@
 <?php
 
-namespace Onliner\CommandBus\Retry;
+declare(strict_types=1);
+
+namespace Onliner\CommandBus\Retry\Policy;
 
 use Onliner\CommandBus\Context;
+use Onliner\CommandBus\Retry\Policy;
 use Throwable;
 
 final class SimplePolicy implements Policy

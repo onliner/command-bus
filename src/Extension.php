@@ -7,8 +7,7 @@ namespace Onliner\CommandBus;
 interface Extension
 {
     /**
-     * @param Builder      $builder
-     * @param array<mixed> $options
+     * @param Builder $builder
      */
-    public function setup(Builder $builder, array $options): void;
+    public function setup(Builder $builder): void;
 }

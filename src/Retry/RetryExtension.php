@@ -24,7 +24,7 @@ final class RetryExtension implements Extension
      */
     public function __construct(Policy $default = null)
     {
-        $this->default = $default ?? new ThrowPolicy;
+        $this->default = $default ?? new Policy\ThrowPolicy;
     }
 
     /**
@@ -41,7 +41,7 @@ final class RetryExtension implements Extension
     /**
      * {@inheritDoc}
      */
-    public function setup(Builder $builder, array $options): void
+    public function setup(Builder $builder): void
     {
         $builder->middleware(new RetryMiddleware($this->default, $this->policies));
     }

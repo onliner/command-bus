@@ -7,7 +7,7 @@ namespace Onliner\CommandBus\Resolver;
 use Onliner\CommandBus\Exception;
 use Onliner\CommandBus\Resolver;
 
-final class ClassMapResolver implements Resolver
+final class CallableResolver implements Resolver
 {
     /**
      * @var array<string, callable>

@@ -19,7 +19,7 @@ class EnvelopeTest extends TestCase
 
         $envelope = new Envelope($target, $payload, $headers);
 
-        self::assertSame($target, $envelope->target);
+        self::assertSame($target, $envelope->type);
         self::assertSame($payload, $envelope->payload);
         self::assertSame($headers, $envelope->headers);
     }

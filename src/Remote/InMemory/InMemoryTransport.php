@@ -8,6 +8,7 @@ use Onliner\CommandBus\Dispatcher;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
+use Throwable;
 
 final class InMemoryTransport implements Transport, Consumer
 {
@@ -24,9 +25,9 @@ final class InMemoryTransport implements Transport, Consumer
     /**
      * {@inheritDoc}
      */
-    public function send(string $route, Envelope $envelope): void
+    public function send(Envelope $envelope): void
     {
-        $this->envelopes[$route][] = $envelope;
+        $this->envelopes[$envelope->type][] = $envelope;
     }
 
     /**
@@ -40,23 +41,25 @@ final class InMemoryTransport implements Transport, Consumer
     /**
      * {@inheritDoc}
      */
-    public function start(Dispatcher $dispatcher): void
+    public function run(Dispatcher $dispatcher): void
     {
+        if ($this->running) {
+            return;
+        }
+
         $this->running = true;
 
-        foreach ($this->envelopes as $route => $items) {
-            foreach ($items as $i => $item) {
-                if (!$this->running()) {
-                    break 2;
-                }
-
-                try {
-                    $dispatcher->dispatch($item);
-                } finally {
-                    unset($this->envelopes[$route][$i]);
+        do {
+            foreach ($this->envelopes as $type => $envelopes) {
+                foreach ($envelopes as $i => $envelope) {
+                    try {
+                        $dispatcher->dispatch($envelope);
+                    } catch (Throwable $error) {
+                        unset($this->envelopes[$type][$i]);
+                    }
                 }
             }
-        }
+        } while ($this->running);
     }
 
     /**
@@ -65,14 +68,6 @@ final class InMemoryTransport implements Transport, Consumer
     public function stop(): void
     {
         $this->running = false;
-    }
-
-    /**
-     * @return bool
-     */
-    public function running(): bool
-    {
-        return $this->running;
     }
 
     /**
@@ -92,12 +87,12 @@ final class InMemoryTransport implements Transport, Consumer
     }
 
     /**
-     * @param string $route
+     * @param string $type
      *
      * @return array<Envelope>
      */
-    public function receive(string $route): array
+    public function receive(string $type): array
     {
-        return $this->envelopes[$route] ?? [];
+        return $this->envelopes[$type] ?? [];
     }
 }

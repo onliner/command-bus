@@ -18,7 +18,7 @@ class ClassMapResolverTest extends TestCase
             self::doesNotPerformAssertions();
         };
 
-        $resolver = new Resolver\ClassMapResolver();
+        $resolver = new Resolver\CallableResolver();
         $resolver->register(get_class($command), $handler);
 
         self::assertEquals($handler, $resolver->resolve($command));
@@ -26,7 +26,7 @@ class ClassMapResolverTest extends TestCase
 
     public function testUnknownHandler(): void
     {
-        $resolver = new Resolver\ClassMapResolver();
+        $resolver = new Resolver\CallableResolver();
 
         $command = new Command\Hello('onliner');
         $handler = $resolver->resolve($command);

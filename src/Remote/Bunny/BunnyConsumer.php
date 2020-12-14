@@ -4,24 +4,19 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\Bunny;
 
-use Generator;
-use Bunny\Client;
 use Bunny\Channel;
+use Bunny\Client;
 use Bunny\Message;
+use Generator;
 use Onliner\CommandBus\Dispatcher;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Throwable;
 
 final class BunnyConsumer implements Consumer
 {
-    private const
-        OPTION_CONSUMER_TAG = 'consumer_tag',
-        OPTION_DELIVERY_TAG = 'delivery_tag',
-        OPTION_REDELIVERED  = 'redelivered'
-    ;
-
     /**
      * @var Client
      */
@@ -40,24 +35,36 @@ final class BunnyConsumer implements Consumer
     /**
      * @var array<string>
      */
-    private $routes = [];
+    private $listen = [];
 
     /**
-     * @param Client          $client
-     * @param ExchangeOptions $options
-     * @param LoggerInterface $logger
+     * @param Client               $client
+     * @param ExchangeOptions|null $options
+     * @param LoggerInterface|null $logger
      */
-    public function __construct(Client $client, ExchangeOptions $options, LoggerInterface $logger)
+    public function __construct(Client $client, ExchangeOptions $options = null, LoggerInterface $logger = null)
     {
         $this->client  = $client;
-        $this->options = $options;
-        $this->logger  = $logger;
+        $this->options = $options ?? ExchangeOptions::default();
+        $this->logger  = $logger ?? new NullLogger();
     }
 
     /**
-     * {@inheritDoc}
+     * @param string $queue
+     *
+     * @return void
      */
-    public function start(Dispatcher $dispatcher): void
+    public function listen(string $queue): void
+    {
+        $this->listen[] = $queue;
+    }
+
+    /**
+     * @param Dispatcher $dispatcher
+     *
+     * @return void
+     */
+    public function run(Dispatcher $dispatcher): void
     {
         if (!$this->client->isConnected()) {
             $this->client->connect();
@@ -68,7 +75,13 @@ final class BunnyConsumer implements Consumer
 
         foreach ($this->setup($channel) as $queue) {
             $channel->consume(function (Message $message, Channel $channel) use ($dispatcher) {
-                $this->handle($message, $channel, $dispatcher);
+                try {
+                    $this->handle($message, $dispatcher);
+                } catch (Throwable $error) {
+                    $this->logger->error($error->getMessage());
+                } finally {
+                    $channel->ack($message);
+                }
             }, $queue);
         }
 
@@ -80,43 +93,11 @@ final class BunnyConsumer implements Consumer
     }
 
     /**
-     * {@inheritDoc}
+     * @return void
      */
     public function stop(): void
     {
         $this->client->stop();
-    }
-
-    /**
-     * @param string $route
-     *
-     * @return self
-     */
-    public function bind(string $route): self
-    {
-        $this->routes[] = $route;
-
-        return $this;
-    }
-
-    /**
-     * @param Message    $message
-     * @param Channel    $channel
-     * @param Dispatcher $dispatcher
-     */
-    private function handle(Message $message, Channel $channel, Dispatcher $dispatcher): void
-    {
-        try {
-            $options = array_merge($message->headers, [
-                self::OPTION_REDELIVERED  => $message->redelivered,
-                self::OPTION_CONSUMER_TAG => $message->consumerTag,
-                self::OPTION_DELIVERY_TAG => $message->deliveryTag,
-            ]);
-
-            $dispatcher->dispatch(new Envelope($message->exchange, $message->content, $options));
-        } finally {
-            $channel->ack($message);
-        }
     }
 
     /**
@@ -138,13 +119,39 @@ final class BunnyConsumer implements Consumer
 
         $channel->exchangeDeclare($exchange, $type, $passive, $durable, $delete, $internal, $noWait, $arguments);
 
-        foreach ($this->routes as $route) {
-            $queue = md5($route);
-
+        foreach ($this->listen as $pattern) {
+            $queue = md5($pattern);
             $channel->queueDeclare($queue, $passive, $durable, $exclusive, $delete, $noWait);
-            $channel->queueBind($queue, $exchange, $route);
+            $channel->queueBind($queue, $exchange, $pattern);
 
             yield $queue;
         }
+    }
+
+    /**
+     * @param Message    $message
+     * @param Dispatcher $dispatcher
+     *
+     * @return void
+     */
+    private function handle(Message $message, Dispatcher $dispatcher): void
+    {
+        $headers = array_merge($message->headers, [
+            ExchangeOptions::HEADER_EXCHANGE     => $message->exchange,
+            ExchangeOptions::HEADER_ROUTING_KEY  => $message->routingKey,
+            ExchangeOptions::HEADER_CONSUMER_TAG => $message->consumerTag,
+            ExchangeOptions::HEADER_DELIVERY_TAG => $message->deliveryTag,
+            ExchangeOptions::HEADER_REDELIVERED  => $message->redelivered,
+        ]);
+
+        if (!isset($headers[ExchangeOptions::HEADER_MESSAGE_TYPE])) {
+            $this->logger->warning(sprintf('Header "%s" not found in message.', ExchangeOptions::HEADER_MESSAGE_TYPE));
+
+            return;
+        }
+
+        $type = $headers[ExchangeOptions::HEADER_MESSAGE_TYPE];
+
+        $dispatcher->dispatch(new Envelope($type, $message->content, $headers));
     }
 }

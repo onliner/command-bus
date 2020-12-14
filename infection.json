@@ -5,7 +5,7 @@
         ]
     },
     "logs": {
-        "text": "build\/logs\/infection.log"
+        "text": "tmp\/infection\/report.log"
     },
     "mutators": {
         "@default": true

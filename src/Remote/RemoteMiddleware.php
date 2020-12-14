@@ -9,26 +9,24 @@ use Onliner\CommandBus\Middleware;
 
 final class RemoteMiddleware implements Middleware
 {
-    public const OPTION_REMOTE = 'remote';
-
     /**
      * @var Gateway
      */
     private $gateway;
 
     /**
-     * @var array<string, string>
+     * @var array<string>
      */
-    private $routes;
+    private $local;
 
     /**
-     * @param Gateway               $gateway
-     * @param array<string, string> $routes
+     * @param Gateway       $gateway
+     * @param array<string> $local
      */
-    public function __construct(Gateway $gateway, array $routes)
+    public function __construct(Gateway $gateway, array $local = [])
     {
         $this->gateway = $gateway;
-        $this->routes  = $routes;
+        $this->local   = $local;
     }
 
     /**
@@ -36,16 +34,10 @@ final class RemoteMiddleware implements Middleware
      */
     public function call(object $message, Context $context, callable $next): void
     {
-        $class = get_class($message);
-
-        if ($this->shouldSend($class, $context)) {
-            $options = array_merge($context->all(), [
-                self::OPTION_REMOTE => true,
-            ]);
-
-            $this->gateway->send($this->routes[$class], $message, $options);
+        if ($this->isLocal(get_class($message), $context)) {
+            $next($message, $context);
         } else {
-            $next($message, $context->del(self::OPTION_REMOTE));
+            $this->gateway->send($message, $context);
         }
     }
 
@@ -55,8 +47,8 @@ final class RemoteMiddleware implements Middleware
      *
      * @return bool
      */
-    private function shouldSend(string $class, Context $context): bool
+    private function isLocal(string $class, Context $context): bool
     {
-        return isset($this->routes[$class]) && !$context->get(self::OPTION_REMOTE, false);
+        return $context->has(Gateway::OPTION_LOCAL) || in_array($class, $this->local);
     }
 }

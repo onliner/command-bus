@@ -8,6 +8,8 @@ use Onliner\CommandBus\Context;
 
 final class Gateway
 {
+    public const OPTION_LOCAL = 'local';
+
     /**
      * @var Transport
      */
@@ -29,18 +31,16 @@ final class Gateway
     }
 
     /**
-     * @param string       $target
-     * @param object       $message
-     * @param array<mixed> $headers
+     * @param object  $message
+     * @param Context $context
      *
      * @return void
      */
-    public function send(string $target, object $message, array $headers = []): void
+    public function send(object $message, Context $context): void
     {
-        $payload  = $this->serializer->serialize($message);
-        $envelope = new Envelope($target, $payload, $headers);
+        $envelope = $this->serializer->serialize($message, $context->all());
 
-        $this->transport->send($this->queueName($message), $envelope);
+        $this->transport->send($envelope);
     }
 
     /**
@@ -51,19 +51,10 @@ final class Gateway
      */
     public function receive(Envelope $envelope, Context $context): void
     {
-        $message = $this->serializer->unserialize($envelope->payload);
-        $options = $envelope->headers;
+        $message = $this->serializer->unserialize($envelope);
 
-        $context->dispatch($message, $options);
-    }
-
-    /**
-     * @param object $message
-     *
-     * @return string
-     */
-    private function queueName(object $message): string
-    {
-        return strtolower(str_replace('\\', '.', get_class($message)));
+        $context->dispatch($message, [
+            self::OPTION_LOCAL => true,
+        ]);
     }
 }

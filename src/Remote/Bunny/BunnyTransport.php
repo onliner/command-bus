@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\Bunny;
 
-use InvalidArgumentException;
 use Bunny\Channel;
 use Bunny\Client;
+use InvalidArgumentException;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
@@ -31,6 +31,11 @@ final class BunnyTransport implements Transport
     private $logger;
 
     /**
+     * @var array<string, string>
+     */
+    private $exchanges = [];
+
+    /**
      * @var ?Channel
      */
     private $channel;
@@ -49,12 +54,11 @@ final class BunnyTransport implements Transport
 
     /**
      * @param string               $dsn
-     * @param ExchangeOptions|null $options
-     * @param LoggerInterface|null $logger
+     * @param array<string, mixed> $options
      *
      * @return self
      */
-    public static function create(string $dsn, ExchangeOptions $options = null, LoggerInterface $logger = null): self
+    public static function create(string $dsn, array $options = []): self
     {
         if (!$components = parse_url($dsn)) {
             throw new InvalidArgumentException('Invalid transport DSN');
@@ -73,26 +77,30 @@ final class BunnyTransport implements Transport
             parse_str($components['query'], $query);
         }
 
-        return new self(new Client($components + $query), $options, $logger);
+        return new self(new Client($components + $query), ExchangeOptions::create($options));
     }
 
     /**
      * {@inheritDoc}
      */
-    public function send(string $route, Envelope $envelope): void
+    public function send(Envelope $envelope): void
     {
+        $headers = $envelope->headers + [
+           ExchangeOptions::HEADER_MESSAGE_TYPE => $envelope->type,
+        ];
+
         $this->channel()->publish(
             $envelope->payload,
-            $envelope->headers,
-            $envelope->target,
-            $route,
+            $headers,
+            $this->exchange($envelope->type),
+            $this->routingKey($envelope->type),
             $this->options->is(ExchangeOptions::FLAG_MANDATORY),
             $this->options->is(ExchangeOptions::FLAG_IMMEDIATE)
         );
     }
 
     /**
-     * {@inheritDoc}
+     * @return Consumer
      */
     public function consume(): Consumer
     {
@@ -100,11 +108,12 @@ final class BunnyTransport implements Transport
     }
 
     /**
-     * @return string
+     * @param string $type
+     * @param string $exchange
      */
-    public function exchange(): string
+    public function bind(string $type, string $exchange): void
     {
-        return $this->options->exchange();
+        $this->exchanges[$type] = $exchange;
     }
 
     /**
@@ -120,5 +129,25 @@ final class BunnyTransport implements Transport
 
         /* @phpstan-ignore-next-line */
         return $this->channel ?? $this->channel = $this->client->channel();
+    }
+
+    /**
+     * @param string $type
+     *
+     * @return string
+     */
+    private function exchange(string $type): string
+    {
+        return $this->exchanges[$type] ?? $this->options->exchange();
+    }
+
+    /**
+     * @param string $type
+     *
+     * @return string
+     */
+    private function routingKey(string $type): string
+    {
+        return strtolower(str_replace('\\', '.', $type));
     }
 }

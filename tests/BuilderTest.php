@@ -58,17 +58,14 @@ class BuilderTest extends TestCase
     public function testBuildWithExtension(): void
     {
         $builder = new Builder();
-        $options = [
-            'foo' => 'bar',
-        ];
 
         $extension = self::createMock(Extension::class);
         $extension
             ->expects(self::once())
             ->method('setup')
-            ->with($builder, $options)
+            ->with($builder)
         ;
 
-        $builder->use($extension)->build($options);
+        $builder->use($extension)->build();
     }
 }
