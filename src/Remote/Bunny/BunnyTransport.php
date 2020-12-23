@@ -31,11 +31,6 @@ final class BunnyTransport implements Transport
     private $logger;
 
     /**
-     * @var array<string, string>
-     */
-    private $exchanges = [];
-
-    /**
      * @var ?Channel
      */
     private $channel;
@@ -89,11 +84,13 @@ final class BunnyTransport implements Transport
            ExchangeOptions::HEADER_MESSAGE_TYPE => $envelope->type,
         ];
 
+        $route = $this->options->route($envelope);
+
         $this->channel()->publish(
             $envelope->payload,
             $headers,
-            $this->exchange($envelope->type),
-            $this->routingKey($envelope->type),
+            $route->exchange(),
+            $route->name(),
             $this->options->is(ExchangeOptions::FLAG_MANDATORY),
             $this->options->is(ExchangeOptions::FLAG_IMMEDIATE)
         );
@@ -105,15 +102,6 @@ final class BunnyTransport implements Transport
     public function consume(): Consumer
     {
         return new BunnyConsumer($this->client, $this->options, $this->logger);
-    }
-
-    /**
-     * @param string $type
-     * @param string $exchange
-     */
-    public function bind(string $type, string $exchange): void
-    {
-        $this->exchanges[$type] = $exchange;
     }
 
     /**
@@ -129,25 +117,5 @@ final class BunnyTransport implements Transport
 
         /* @phpstan-ignore-next-line */
         return $this->channel ?? $this->channel = $this->client->channel();
-    }
-
-    /**
-     * @param string $type
-     *
-     * @return string
-     */
-    private function exchange(string $type): string
-    {
-        return $this->exchanges[$type] ?? $this->options->exchange();
-    }
-
-    /**
-     * @param string $type
-     *
-     * @return string
-     */
-    private function routingKey(string $type): string
-    {
-        return strtolower(str_replace('\\', '.', $type));
     }
 }

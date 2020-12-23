@@ -60,9 +60,7 @@ final class BunnyConsumer implements Consumer
     }
 
     /**
-     * @param Dispatcher $dispatcher
-     *
-     * @return void
+     * {@inheritDoc}
      */
     public function run(Dispatcher $dispatcher): void
     {
@@ -93,7 +91,7 @@ final class BunnyConsumer implements Consumer
     }
 
     /**
-     * @return void
+     * {@inheritDoc}
      */
     public function stop(): void
     {
@@ -121,6 +119,7 @@ final class BunnyConsumer implements Consumer
 
         foreach ($this->listen as $pattern) {
             $queue = md5($pattern);
+
             $channel->queueDeclare($queue, $passive, $durable, $exclusive, $delete, $noWait);
             $channel->queueBind($queue, $exchange, $pattern);
 

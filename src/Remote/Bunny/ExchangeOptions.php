@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\Bunny;
 
+use Onliner\CommandBus\Remote\Envelope;
+
 final class ExchangeOptions
 {
     public const
@@ -61,6 +63,11 @@ final class ExchangeOptions
     private $flags;
 
     /**
+     * @var array<string, mixed>
+     */
+    private $bind;
+
+    /**
      * @var array<string, string>
      */
     private $args;
@@ -69,13 +76,20 @@ final class ExchangeOptions
      * @param string                 $exchange
      * @param string                 $type
      * @param int                    $flags
+     * @param array<string, string>  $bind
      * @param array<string, string>  $args
      */
-    public function __construct(string $exchange, string $type = self::TYPE_TOPIC, int $flags = 0, array $args = [])
-    {
+    public function __construct(
+        string $exchange,
+        string $type = self::TYPE_TOPIC,
+        int $flags = 0,
+        array $bind = [],
+        array $args = []
+    ) {
         $this->exchange = $exchange;
         $this->type     = $type;
         $this->flags    = $flags;
+        $this->bind     = $bind;
         $this->args     = $args;
     }
 
@@ -88,6 +102,7 @@ final class ExchangeOptions
     {
         $type     = $options['type'] ?? self::TYPE_TOPIC;
         $exchange = $options['exchange'] ?? sprintf('amqp.%s', $type);
+        $bind     = $options['bind'] ?? [];
         $args     = $options['args'] ?? [];
         $flags    = 0;
 
@@ -101,7 +116,7 @@ final class ExchangeOptions
             $args['x-delayed-type'] = self::TYPE_TOPIC;
         }
 
-        return new self($exchange, $type, $flags, $args);
+        return new self($exchange, $type, $flags, $bind, $args);
     }
 
     /**
@@ -136,6 +151,26 @@ final class ExchangeOptions
     public function is(int $flag): bool
     {
         return ($this->flags & $flag) === $flag;
+    }
+
+    /**
+     * @param Envelope $envelope
+     *
+     * @return Route
+     */
+    public function route(Envelope $envelope): Route
+    {
+        $type = $envelope->type;
+        $bind = $this->bind[$type] ?? $this->exchange;
+
+        if (is_array($bind)) {
+            [$exchange, $route] = array_values($bind);
+        } else {
+            $exchange = $bind;
+            $route    = strtolower(str_replace('\\', '.', $type));
+        }
+
+        return new Route($exchange, $route);
     }
 
     /**
