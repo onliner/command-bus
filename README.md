@@ -17,13 +17,13 @@ The preferred way to install this extension is through [composer](http://getcomp
 Either run
 
 ```
-composer require onliner/command-bus:^1.0
+composer require onliner/command-bus:^0.1.0
 ```
 
 or add this code line to the `require` section of your `composer.json` file:
 
 ```
-"onliner/command-bus": "^1.0"
+"onliner/command-bus": "^0.1.0"
 ```
 
 Usage
