@@ -41,7 +41,7 @@ final class InMemoryTransport implements Transport, Consumer
     /**
      * {@inheritDoc}
      */
-    public function run(Dispatcher $dispatcher): void
+    public function run(Dispatcher $dispatcher, array $options = []): void
     {
         if ($this->running) {
             return;
