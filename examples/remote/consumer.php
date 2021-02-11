@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use Onliner\CommandBus\Remote\Bunny\BunnyConsumer;
-use Onliner\CommandBus\Remote\Bunny\BunnyTransport;
+use Onliner\CommandBus\Remote\AMQP\AMQPTransport;
+use Onliner\CommandBus\Remote\AMQP\AMQPConsumer;
 
 $dispatcher = require __DIR__ . '/dispatcher.php';
-$transport = BunnyTransport::create('amqp://guest:guest@localhost:5672', [
+$transport = AMQPTransport::create('amqp://guest:guest@localhost:5672', [
     'exchange' => 'mailer',
 ]);
 
-/** @var BunnyConsumer $consumer */
+/** @var AMQPConsumer $consumer */
 $consumer = $transport->consume();
 $consumer->listen('#');
 
@@ -24,4 +24,7 @@ foreach ([SIGINT, SIGTERM] as $signal) {
     });
 }
 
-$consumer->run($dispatcher);
+$consumer->run($dispatcher, [
+    AMQPConsumer::OPTION_ATTEMPTS => 10,
+    AMQPConsumer::OPTION_INTERVAL => 100000, // 100 ms
+]);

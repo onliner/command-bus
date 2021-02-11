@@ -2,24 +2,25 @@
 
 declare(strict_types=1);
 
-namespace Onliner\CommandBus\Tests\Remote\Bunny;
+namespace Onliner\CommandBus\Tests\Remote\AMQP;
 
-use Bunny\Channel;
-use Bunny\Client;
 use InvalidArgumentException;
-use Onliner\CommandBus\Remote\Bunny\ExchangeOptions;
+use Onliner\CommandBus\Remote\AMQP\AMQPTransport;
+use Onliner\CommandBus\Remote\AMQP\Connector;
 use Onliner\CommandBus\Remote\Envelope;
-use Onliner\CommandBus\Remote\Bunny\BunnyTransport;
+use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 use PHPUnit\Framework\TestCase;
 
-class BunnyTransportTest extends TestCase
+class AMQPTransportTest extends TestCase
 {
     public function testCreate(): void
     {
         $error = null;
 
         try {
-            BunnyTransport::create('amqp://guest:guest@localhost/vhost?timeout=1&foo=bar');
+            AMQPTransport::create('amqp://guest:guest@localhost/vhost?timeout=1&foo=bar');
         } catch (InvalidArgumentException $error) {
         }
 
@@ -31,7 +32,7 @@ class BunnyTransportTest extends TestCase
         self::expectException(InvalidArgumentException::class);
         self::expectExceptionMessage('Invalid transport DSN');
 
-        BunnyTransport::create('//');
+        AMQPTransport::create('//');
     }
 
     public function testSend(): void
@@ -44,32 +45,26 @@ class BunnyTransportTest extends TestCase
             'x-message-type' => $envelope->type,
         ];
 
-        $channel = self::createMock(Channel::class);
+        $message = new AMQPMessage($envelope->payload, [
+            'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+        ]);
+        $message->set('application_headers', new AMQPTable($headers));
+
+        $channel = self::createMock(AMQPChannel::class);
         $channel
             ->expects(self::exactly(2))
-            ->method('publish')
-            ->with($envelope->payload, $headers, 'amqp.topic', $envelope->type)
+            ->method('basic_publish')
+            ->with($message, 'amqp.topic', $envelope->type, false, false)
         ;
 
-        $client = self::createMock(Client::class);
-        $client
+        $connector = self::createMock(Connector::class);
+        $connector
             ->expects(self::exactly(2))
-            ->method('isConnected')
-            ->willReturn(false, true)
-        ;
-
-        $client
-            ->expects(self::once())
             ->method('connect')
-        ;
-
-        $client
-            ->expects(self::once())
-            ->method('channel')
             ->willReturn($channel)
         ;
 
-        $transport = new BunnyTransport($client);
+        $transport = new AMQPTransport($connector);
         $transport->send($envelope);
         $transport->send($envelope);
     }

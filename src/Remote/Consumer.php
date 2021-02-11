@@ -9,9 +9,12 @@ use Onliner\CommandBus\Dispatcher;
 interface Consumer
 {
     /**
-     * @param Dispatcher $dispatcher
+     * @param Dispatcher           $dispatcher
+     * @param array<string, mixed> $options
+     *
+     * @return void
      */
-    public function run(Dispatcher $dispatcher): void;
+    public function run(Dispatcher $dispatcher, array $options = []): void;
 
     /**
      * @return void
