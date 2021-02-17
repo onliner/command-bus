@@ -11,6 +11,7 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exception\AMQPConnectionClosedException;
 use PhpAmqpLib\Exception\AMQPIOException;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;
@@ -126,7 +127,7 @@ final class AMQPConsumer implements Consumer
         $internal  = $this->options->is(ExchangeOptions::FLAG_INTERNAL);
         $exclusive = $this->options->is(ExchangeOptions::FLAG_EXCLUSIVE);
         $noWait    = $this->options->is(ExchangeOptions::FLAG_NO_WAIT);
-        $arguments = $this->options->args();
+        $arguments = new AMQPTable($this->options->args());
 
         $handler = function (AMQPMessage $message) use ($dispatcher) {
             try {
