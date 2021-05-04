@@ -11,7 +11,6 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exception\AMQPConnectionClosedException;
 use PhpAmqpLib\Exception\AMQPIOException;
 use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Wire\AMQPTable;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;
@@ -34,9 +33,9 @@ final class AMQPConsumer implements Consumer
     private $connector;
 
     /**
-     * @var ExchangeOptions
+     * @var Exchange
      */
-    private $options;
+    private $exchange;
 
     /**
      * @var LoggerInterface
@@ -44,9 +43,9 @@ final class AMQPConsumer implements Consumer
     private $logger;
 
     /**
-     * @var array<string>
+     * @var array<Queue>
      */
-    private $listen = [];
+    private $queues = [];
 
     /**
      * @var bool
@@ -55,24 +54,32 @@ final class AMQPConsumer implements Consumer
 
     /**
      * @param Connector            $connector
-     * @param ExchangeOptions|null $options
+     * @param Exchange             $exchange
      * @param LoggerInterface|null $logger
      */
-    public function __construct(Connector $connector, ExchangeOptions $options = null, LoggerInterface $logger = null)
+    public function __construct(Connector $connector, Exchange $exchange, LoggerInterface $logger = null)
     {
         $this->connector = $connector;
-        $this->options   = $options ?? ExchangeOptions::default();
+        $this->exchange  = $exchange;
         $this->logger    = $logger ?? new NullLogger();
     }
 
     /**
-     * @param string $queue
+     * @param string $pattern
      *
      * @return void
      */
-    public function listen(string $queue): void
+    public function listen(string $pattern): void
     {
-        $this->listen[] = $queue;
+        $this->consume(new Queue(md5($pattern), $pattern, $this->exchange->flags()));
+    }
+
+    /**
+     * @param Queue $queue
+     */
+    public function consume(Queue $queue): void
+    {
+        $this->queues[] = $queue;
     }
 
     /**
@@ -116,19 +123,11 @@ final class AMQPConsumer implements Consumer
      * @param array<string, mixed> $options
      *
      * @return AMQPChannel
+     * @throws AMQPIOException
      */
     private function channel(Dispatcher $dispatcher, array $options): AMQPChannel
     {
-        $exchange  = $this->options->exchange();
-        $type      = $this->options->type();
-        $passive   = $this->options->is(ExchangeOptions::FLAG_PASSIVE);
-        $durable   = $this->options->is(ExchangeOptions::FLAG_DURABLE);
-        $delete    = $this->options->is(ExchangeOptions::FLAG_DELETE);
-        $internal  = $this->options->is(ExchangeOptions::FLAG_INTERNAL);
-        $exclusive = $this->options->is(ExchangeOptions::FLAG_EXCLUSIVE);
-        $noWait    = $this->options->is(ExchangeOptions::FLAG_NO_WAIT);
-        $arguments = new AMQPTable($this->options->args());
-
+        $channel = $this->connect($options);
         $handler = function (AMQPMessage $message) use ($dispatcher) {
             try {
                 $this->handle($message, $dispatcher);
@@ -139,15 +138,11 @@ final class AMQPConsumer implements Consumer
             }
         };
 
-        $channel = $this->connect($options);
-        $channel->exchange_declare($exchange, $type, $passive, $durable, $delete, $internal, $noWait, $arguments);
+        $this->exchange->declare($channel);
 
-        foreach ($this->listen as $pattern) {
-            $queue = md5($pattern);
-
-            $channel->queue_declare($queue, $passive, $durable, $exclusive, $delete, $noWait);
-            $channel->queue_bind($queue, $exchange, $pattern);
-            $channel->basic_consume($queue, '',  false, false, false, false, $handler);
+        foreach ($this->queues as $queue) {
+            $queue->declare($channel);
+            $queue->consume($channel, $this->exchange, $handler);
         }
 
         return $channel;
@@ -157,6 +152,7 @@ final class AMQPConsumer implements Consumer
      * @param array<string, mixed> $options
      *
      * @return AMQPChannel
+     * @throws AMQPIOException
      */
     private function connect(array $options): AMQPChannel
     {
@@ -191,20 +187,20 @@ final class AMQPConsumer implements Consumer
     {
         $headers = $message->get('application_headers')->getNativeData();
         $headers = array_merge($headers, [
-            ExchangeOptions::HEADER_EXCHANGE     => $message->getExchange(),
-            ExchangeOptions::HEADER_ROUTING_KEY  => $message->getRoutingKey(),
-            ExchangeOptions::HEADER_CONSUMER_TAG => $message->getConsumerTag(),
-            ExchangeOptions::HEADER_DELIVERY_TAG => $message->getDeliveryTag(),
-            ExchangeOptions::HEADER_REDELIVERED  => $message->isRedelivered(),
+            Exchange::HEADER_EXCHANGE     => $message->getExchange(),
+            Exchange::HEADER_ROUTING_KEY  => $message->getRoutingKey(),
+            Exchange::HEADER_CONSUMER_TAG => $message->getConsumerTag(),
+            Exchange::HEADER_DELIVERY_TAG => $message->getDeliveryTag(),
+            Exchange::HEADER_REDELIVERED  => $message->isRedelivered(),
         ]);
 
-        if (!isset($headers[ExchangeOptions::HEADER_MESSAGE_TYPE])) {
-            $this->logger->warning(sprintf('Header "%s" not found in message.', ExchangeOptions::HEADER_MESSAGE_TYPE));
+        if (!isset($headers[Exchange::HEADER_MESSAGE_TYPE])) {
+            $this->logger->warning(sprintf('Header "%s" not found in message.', Exchange::HEADER_MESSAGE_TYPE));
 
             return;
         }
 
-        $type = $headers[ExchangeOptions::HEADER_MESSAGE_TYPE];
+        $type = $headers[Exchange::HEADER_MESSAGE_TYPE];
 
         $dispatcher->dispatch(new Envelope($type, $message->getBody(), $headers));
     }

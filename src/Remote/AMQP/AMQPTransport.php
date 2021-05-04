@@ -24,9 +24,9 @@ final class AMQPTransport implements Transport
     private $connector;
 
     /**
-     * @var ExchangeOptions
+     * @var Exchange
      */
-    private $options;
+    private $exchange;
 
     /**
      * @var LoggerInterface
@@ -35,13 +35,13 @@ final class AMQPTransport implements Transport
 
     /**
      * @param Connector            $connector
-     * @param ExchangeOptions|null $options
+     * @param Exchange             $exchange
      * @param LoggerInterface|null $logger
      */
-    public function __construct(Connector $connector, ExchangeOptions $options = null, LoggerInterface $logger = null)
+    public function __construct(Connector $connector, Exchange $exchange, LoggerInterface $logger = null)
     {
         $this->connector = $connector;
-        $this->options   = $options ?? ExchangeOptions::default();
+        $this->exchange  = $exchange;
         $this->logger    = $logger ?? new NullLogger();
     }
 
@@ -53,7 +53,7 @@ final class AMQPTransport implements Transport
      */
     public static function create(string $dsn, array $options = []): self
     {
-        return new self(Connector::create($dsn), ExchangeOptions::create($options));
+        return new self(Connector::create($dsn), Exchange::create($options));
     }
 
     /**
@@ -62,20 +62,23 @@ final class AMQPTransport implements Transport
     public function send(Envelope $envelope): void
     {
         $headers = $envelope->headers + [
-           ExchangeOptions::HEADER_MESSAGE_TYPE => $envelope->type,
+            Exchange::HEADER_MESSAGE_TYPE => $envelope->type,
         ];
 
         $message = new AMQPMessage($envelope->payload, self::MESSAGE_PROPERTIES);
         $message->set('application_headers', new AMQPTable($headers));
 
-        $route = $this->options->route($envelope);
+        // TODO: move routing logic to separate class
+        $route = $this->exchange->route($envelope);
 
-        $this->connector->connect()->basic_publish(
+        // TODO: add support for `mandatory` and `immediate` options
+        $channel = $this->connector->connect();
+        $channel->basic_publish(
             $message,
             $route->exchange(),
             $route->name(),
-            $this->options->is(ExchangeOptions::FLAG_MANDATORY),
-            $this->options->is(ExchangeOptions::FLAG_IMMEDIATE)
+            false,
+            false
         );
     }
 
@@ -84,6 +87,6 @@ final class AMQPTransport implements Transport
      */
     public function consume(): Consumer
     {
-        return new AMQPConsumer($this->connector, $this->options, $this->logger);
+        return new AMQPConsumer($this->connector, $this->exchange, $this->logger);
     }
 }

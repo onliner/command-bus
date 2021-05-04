@@ -7,6 +7,7 @@ namespace Onliner\CommandBus\Tests\Remote\AMQP;
 use InvalidArgumentException;
 use Onliner\CommandBus\Remote\AMQP\AMQPTransport;
 use Onliner\CommandBus\Remote\AMQP\Connector;
+use Onliner\CommandBus\Remote\AMQP\Exchange;
 use Onliner\CommandBus\Remote\Envelope;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -64,7 +65,7 @@ class AMQPTransportTest extends TestCase
             ->willReturn($channel)
         ;
 
-        $transport = new AMQPTransport($connector);
+        $transport = new AMQPTransport($connector, Exchange::create([]));
         $transport->send($envelope);
         $transport->send($envelope);
     }
