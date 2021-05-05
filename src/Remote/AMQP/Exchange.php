@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Onliner\CommandBus\Remote\AMQP;
 
 use Onliner\CommandBus\Remote\Envelope;
+use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Wire\AMQPTable;
 
-final class ExchangeOptions
+final class Exchange
 {
     public const
         TYPE_TOPIC   = 'topic',
@@ -25,32 +27,10 @@ final class ExchangeOptions
         HEADER_MESSAGE_TYPE = 'x-message-type'
     ;
 
-    public const
-        FLAG_PASSIVE   = 1,
-        FLAG_DURABLE   = 2,
-        FLAG_DELETE    = 4,
-        FLAG_INTERNAL  = 8,
-        FLAG_EXCLUSIVE = 16,
-        FLAG_NO_WAIT   = 32,
-        FLAG_MANDATORY = 64,
-        FLAG_IMMEDIATE = 128
-    ;
-
-    private const OPTIONS = [
-        'passive'   => self::FLAG_PASSIVE,
-        'durable'   => self::FLAG_DURABLE,
-        'delete'    => self::FLAG_DELETE,
-        'internal'  => self::FLAG_INTERNAL,
-        'exclusive' => self::FLAG_EXCLUSIVE,
-        'no_wait'   => self::FLAG_NO_WAIT,
-        'mandatory' => self::FLAG_MANDATORY,
-        'immediate' => self::FLAG_IMMEDIATE,
-    ];
-
     /**
      * @var string
      */
-    private $exchange;
+    private $name;
 
     /**
      * @var string
@@ -58,7 +38,7 @@ final class ExchangeOptions
     private $type;
 
     /**
-     * @var int
+     * @var AMQPFlags
      */
     private $flags;
 
@@ -73,24 +53,24 @@ final class ExchangeOptions
     private $args;
 
     /**
-     * @param string                 $exchange
+     * @param string                 $name
      * @param string                 $type
-     * @param int                    $flags
+     * @param AMQPFlags              $flags
      * @param array<string, string>  $bind
      * @param array<string, string>  $args
      */
     public function __construct(
-        string $exchange,
-        string $type = self::TYPE_TOPIC,
-        int $flags = 0,
+        string $name,
+        string $type,
+        AMQPFlags $flags,
         array $bind = [],
         array $args = []
     ) {
-        $this->exchange = $exchange;
-        $this->type     = $type;
-        $this->flags    = $flags;
-        $this->bind     = $bind;
-        $this->args     = $args;
+        $this->name  = $name;
+        $this->type  = $type;
+        $this->flags = $flags;
+        $this->bind  = $bind;
+        $this->args  = $args;
     }
 
     /**
@@ -100,39 +80,25 @@ final class ExchangeOptions
      */
     public static function create(array $options): self
     {
-        $type     = $options['type'] ?? self::TYPE_TOPIC;
-        $exchange = $options['exchange'] ?? sprintf('amqp.%s', $type);
-        $bind     = $options['bind'] ?? [];
-        $args     = $options['args'] ?? [];
-        $flags    = 0;
-
-        foreach (self::OPTIONS as $key => $flag) {
-            if (filter_var($options[$key] ?? false, FILTER_VALIDATE_BOOLEAN)) {
-                $flags = $flags | $flag;
-            }
-        }
+        $type  = $options['type'] ?? self::TYPE_TOPIC;
+        $name  = $options['exchange'] ?? sprintf('amqp.%s', $type);
+        $flags = AMQPFlags::compute($options);
+        $bind  = $options['bind'] ?? [];
+        $args  = $options['args'] ?? [];
 
         if ($type === self::TYPE_DELAYED && !isset($args['x-delayed-type'])) {
             $args['x-delayed-type'] = self::TYPE_TOPIC;
         }
 
-        return new self($exchange, $type, $flags, $bind, $args);
-    }
-
-    /**
-     * @return self
-     */
-    public static function default(): self
-    {
-        return self::create([]);
+        return new self($name, $type, $flags, $bind, $args);
     }
 
     /**
      * @return string
      */
-    public function exchange(): string
+    public function name(): string
     {
-        return $this->exchange;
+        return $this->name;
     }
 
     /**
@@ -144,13 +110,21 @@ final class ExchangeOptions
     }
 
     /**
+     * @return AMQPFlags
+     */
+    public function flags(): AMQPFlags
+    {
+        return $this->flags;
+    }
+
+    /**
      * @param int $flag
      *
      * @return bool
      */
     public function is(int $flag): bool
     {
-        return ($this->flags & $flag) === $flag;
+        return $this->flags->is($flag);
     }
 
     /**
@@ -161,7 +135,7 @@ final class ExchangeOptions
     public function route(Envelope $envelope): Route
     {
         $type = $envelope->type;
-        $bind = $this->bind[$type] ?? $this->exchange;
+        $bind = $this->bind[$type] ?? $this->name;
 
         if (is_array($bind)) {
             [$exchange, $route] = array_values($bind);
@@ -174,10 +148,21 @@ final class ExchangeOptions
     }
 
     /**
-     * @return array<string, string>
+     * @param AMQPChannel $channel
+     *
+     * @return void
      */
-    public function args(): array
+    public function declare(AMQPChannel $channel): void
     {
-        return $this->args;
+        $channel->exchange_declare(
+            $this->name,
+            $this->type,
+            $this->flags->is(AMQPFlags::PASSIVE),
+            $this->flags->is(AMQPFlags::DURABLE),
+            $this->flags->is(AMQPFlags::DELETE),
+            $this->flags->is(AMQPFlags::INTERNAL),
+            $this->flags->is(AMQPFlags::NO_WAIT),
+            new AMQPTable($this->args)
+        );
     }
 }
