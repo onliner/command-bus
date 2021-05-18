@@ -30,8 +30,14 @@ final class CallableResolver implements Resolver
     {
         $class = get_class($command);
 
-        return $this->handlers[$class] ?? static function () use ($class) {
-            throw new Exception\UnknownHandlerException($class);
+        do {
+            if (isset($this->handlers[$class])) {
+                return $this->handlers[$class];
+            }
+        } while ($class = get_parent_class($class));
+
+        return static function () use ($command) {
+            throw Exception\UnknownHandlerException::forCommand($command);
         };
     }
 }
