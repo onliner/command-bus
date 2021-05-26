@@ -8,4 +8,5 @@ use Onliner\CommandBus\Builder;
 $builder = require __DIR__ . '/builder.php';
 
 $dispatcher = $builder->build();
-$dispatcher->dispatch(new SendEmail('example@mail.com', 'Onliner', 'Hello world!'));
+$dispatcher->dispatch(new Foo\Hello('Onliner'));
+$dispatcher->dispatch(new Bar\Hello('Onliner'));
