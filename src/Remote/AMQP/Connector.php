@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
+use Exception;
 use InvalidArgumentException;
 use PhpAmqpLib\Channel\AMQPChannel;
-use PhpAmqpLib\Connection\AbstractConnection;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 
 class Connector
@@ -17,9 +17,9 @@ class Connector
     private $hosts;
 
     /**
-     * @var AbstractConnection|null
+     * @var AMQPChannel|null
      */
-    private $connection;
+    private $channel;
 
     /**
      * @param array<array<mixed>> $hosts
@@ -60,17 +60,14 @@ class Connector
 
     /**
      * @return AMQPChannel
+     * @throws Exception
      */
     public function connect(): AMQPChannel
     {
-        if (!$this->connection) {
-            $this->connection = AMQPStreamConnection::create_connection($this->hosts);
+        if (isset($this->channel) && $this->channel->is_open()) {
+            return $this->channel;
         }
 
-        if (!$this->connection->isConnected()) {
-            $this->connection->reconnect();
-        }
-
-        return $this->connection->channel();
+        return $this->channel = AMQPStreamConnection::create_connection($this->hosts)->channel();
     }
 }
