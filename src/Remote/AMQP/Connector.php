@@ -8,6 +8,7 @@ use Exception;
 use InvalidArgumentException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Connection\Heartbeat\PCNTLHeartbeatSender;
 
 class Connector
 {
@@ -17,16 +18,28 @@ class Connector
     private $hosts;
 
     /**
+     * @var array<string, mixed>
+     */
+    private $options;
+
+    /**
      * @var AMQPChannel|null
      */
     private $channel;
 
     /**
-     * @param array<array<mixed>> $hosts
+     * @var PCNTLHeartbeatSender|null
      */
-    public function __construct(array $hosts)
+    private $heartbeats;
+
+    /**
+     * @param array<array<mixed>> $hosts
+     * @param array<string, mixed> $options
+     */
+    public function __construct(array $hosts, array $options)
     {
         $this->hosts = $hosts;
+        $this->options = $options;
     }
 
     /**
@@ -55,7 +68,13 @@ class Connector
             unset($components['pass']);
         }
 
-        return new self([$components]);
+        $options = [];
+
+        if (isset($components['query'])) {
+            parse_str($components['query'], $options);
+        }
+
+        return new self([$components], $options);
     }
 
     /**
@@ -68,6 +87,14 @@ class Connector
             return $this->channel;
         }
 
-        return $this->channel = AMQPStreamConnection::create_connection($this->hosts)->channel();
+        /** @var AMQPStreamConnection $connection */
+        $connection = AMQPStreamConnection::create_connection($this->hosts, $this->options);
+
+        if ($connection->getHeartbeat() > 0) {
+            $this->heartbeats = new PCNTLHeartbeatSender($connection);
+            $this->heartbeats->register();
+        }
+
+        return $this->channel = $connection->channel();
     }
 }
