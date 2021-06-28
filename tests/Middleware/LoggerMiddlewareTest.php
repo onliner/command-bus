@@ -37,7 +37,13 @@ class LoggerMiddlewareTest extends TestCase
         $logger
             ->expects(self::once())
             ->method('log')
-            ->with($level, 'expected', [])
+            ->with($level, 'expected', [
+                'options' => [],
+                'message' => Command\Hello::class,
+                'payload' => [
+                    'name' => 'onliner',
+                ],
+            ])
         ;
 
         $dispatcher = (new Builder())
