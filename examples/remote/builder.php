@@ -10,7 +10,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 require __DIR__ . '/messages.php';
 
 $transport = AMQPTransport::create('amqp://guest:guest@localhost:5672', [
-    'exchange' => 'mailer',
+    'exchange' => 'foo',
 ]);
 
 return (new Builder())

@@ -14,7 +14,7 @@ $builder->handle(Bar\Hello::class, function (Bar\Hello $command) {
 
 $dispatcher = $builder->build();
 
-$transport = AMQPTransport::create('amqp://guest:guest@localhost:5672', [
+$transport = AMQPTransport::create('amqp://guest:guest@localhost:5673', [
     'exchange' => 'bar',
 ]);
 

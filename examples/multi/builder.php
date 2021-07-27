@@ -10,12 +10,15 @@ use Onliner\CommandBus\Remote\Transport;
 require __DIR__ . '/../../vendor/autoload.php';
 require __DIR__ . '/messages.php';
 
-$transport = AMQPTransport::create('amqp://guest:guest@localhost:5672', [
+$transportFoo = AMQPTransport::create('amqp://guest:guest@localhost:5672', [
     'exchange' => 'foo',
-    'routes' => [
-        'Bar\*' => 'bar',
-    ],
 ]);
+$transportBar = AMQPTransport::create('amqp://guest:guest@localhost:5673', [
+    'exchange' => 'bar',
+]);
+
+$transport = new Transport\MultiTransport($transportFoo);
+$transport->add('Bar\*', $transportBar);
 
 return (new Builder())
     ->use(new RemoteExtension($transport))

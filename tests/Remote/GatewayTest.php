@@ -9,7 +9,7 @@ use Onliner\CommandBus\Dispatcher;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Gateway;
 use Onliner\CommandBus\Remote\Serializer;
-use Onliner\CommandBus\Remote\InMemory;
+use Onliner\CommandBus\Remote\Transport;
 use Onliner\CommandBus\Resolver\CallableResolver;
 use Onliner\CommandBus\Tests\Command\Hello;
 use PHPUnit\Framework\TestCase;
@@ -18,7 +18,7 @@ class GatewayTest extends TestCase
 {
     public function testSend(): void
     {
-        $transport  = new InMemory\InMemoryTransport();
+        $transport  = new Transport\MemoryTransport();
         $serializer = new Serializer\NativeSerializer();
 
         $command = new Hello('onliner');

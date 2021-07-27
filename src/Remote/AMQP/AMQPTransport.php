@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
+use Onliner\CommandBus\Remote\AMQP\Router\SimpleRouter;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
@@ -29,6 +30,11 @@ final class AMQPTransport implements Transport
     private $exchange;
 
     /**
+     * @var Router
+     */
+    private $router;
+
+    /**
      * @var LoggerInterface
      */
     private $logger;
@@ -36,12 +42,18 @@ final class AMQPTransport implements Transport
     /**
      * @param Connector            $connector
      * @param Exchange             $exchange
+     * @param Router|null          $router
      * @param LoggerInterface|null $logger
      */
-    public function __construct(Connector $connector, Exchange $exchange, LoggerInterface $logger = null)
-    {
+    public function __construct(
+        Connector $connector,
+        Exchange $exchange,
+        Router $router = null,
+        LoggerInterface $logger = null
+    ) {
         $this->connector = $connector;
         $this->exchange  = $exchange;
+        $this->router    = $router ?? new SimpleRouter();
         $this->logger    = $logger ?? new NullLogger();
     }
 
@@ -53,7 +65,9 @@ final class AMQPTransport implements Transport
      */
     public static function create(string $dsn, array $options = []): self
     {
-        return new self(Connector::create($dsn), Exchange::create($options));
+        $resolver = new SimpleRouter($options['routes'] ?? []);
+
+        return new self(Connector::create($dsn), Exchange::create($options), $resolver);
     }
 
     /**
@@ -68,8 +82,7 @@ final class AMQPTransport implements Transport
         $message = new AMQPMessage($envelope->payload, self::MESSAGE_PROPERTIES);
         $message->set('application_headers', new AMQPTable($headers));
 
-        // TODO: move routing logic to separate class
-        $route = $this->exchange->route($envelope);
+        $route = $this->router->match($envelope, $this->exchange);
 
         // TODO: add support for `mandatory` and `immediate` options
         $channel = $this->connector->connect();
