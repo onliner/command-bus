@@ -38,15 +38,15 @@ final class Queue
 
     /**
      * @param string                $name
-     * @param string                $pattern
-     * @param AMQPFlags             $flags
+     * @param string|null           $pattern
+     * @param AMQPFlags|null        $flags
      * @param array<string, string> $args
      */
-    public function __construct(string $name, string $pattern, AMQPFlags $flags, array $args = [])
+    public function __construct(string $name, string $pattern = null, AMQPFlags $flags = null, array $args = [])
     {
         $this->name    = $name;
-        $this->pattern = $pattern;
-        $this->flags   = $flags;
+        $this->pattern = $pattern ?? $name;
+        $this->flags   = $flags ?? AMQPFlags::default();
         $this->args    = $args;
     }
 
@@ -58,7 +58,7 @@ final class Queue
     public static function create(array $options): self
     {
         $pattern = $options['pattern'] ?? '#';
-        $name    = $options['queue'] ?? md5($pattern); // TODO: remove hardcoded queue name
+        $name    = $options['queue'] ?? $pattern;
 
         return new self($name, $pattern, AMQPFlags::compute($options), $options['args'] ?? []);
     }
@@ -91,10 +91,12 @@ final class Queue
 
     /**
      * @param AMQPChannel $channel
+     * @param Exchange    $exchange
+     * @param callable    $handler
      *
      * @return void
      */
-    public function declare(AMQPChannel $channel): void
+    public function consume(AMQPChannel $channel, Exchange $exchange, callable $handler): void
     {
         $channel->queue_declare(
             $this->name,
@@ -105,18 +107,9 @@ final class Queue
             $this->flags->is(AMQPFlags::NO_WAIT),
             new AMQPTable($this->args)
         );
-    }
 
-    /**
-     * @param AMQPChannel $channel
-     * @param Exchange    $exchange
-     * @param callable    $handler
-     *
-     * @return void
-     */
-    public function consume(AMQPChannel $channel, Exchange $exchange, callable $handler): void
-    {
         $channel->queue_bind($this->name, $exchange->name(), $this->pattern);
+
         $channel->basic_consume(
             $this->name,
             '',

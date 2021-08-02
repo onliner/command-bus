@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
-use Onliner\CommandBus\Remote\Envelope;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -43,11 +42,6 @@ final class Exchange
     private $flags;
 
     /**
-     * @var array<string, mixed>
-     */
-    private $bind;
-
-    /**
      * @var array<string, string>
      */
     private $args;
@@ -55,21 +49,18 @@ final class Exchange
     /**
      * @param string                 $name
      * @param string                 $type
-     * @param AMQPFlags              $flags
-     * @param array<string, string>  $bind
+     * @param AMQPFlags|null         $flags
      * @param array<string, string>  $args
      */
     public function __construct(
         string $name,
-        string $type,
-        AMQPFlags $flags,
-        array $bind = [],
+        string $type = self::TYPE_TOPIC,
+        AMQPFlags $flags = null,
         array $args = []
     ) {
         $this->name  = $name;
         $this->type  = $type;
-        $this->flags = $flags;
-        $this->bind  = $bind;
+        $this->flags = $flags ?? AMQPFlags::default();
         $this->args  = $args;
     }
 
@@ -83,14 +74,13 @@ final class Exchange
         $type  = $options['type'] ?? self::TYPE_TOPIC;
         $name  = $options['exchange'] ?? sprintf('amqp.%s', $type);
         $flags = AMQPFlags::compute($options);
-        $bind  = $options['bind'] ?? [];
         $args  = $options['args'] ?? [];
 
         if ($type === self::TYPE_DELAYED && !isset($args['x-delayed-type'])) {
             $args['x-delayed-type'] = self::TYPE_TOPIC;
         }
 
-        return new self($name, $type, $flags, $bind, $args);
+        return new self($name, $type, $flags, $args);
     }
 
     /**
@@ -125,26 +115,6 @@ final class Exchange
     public function is(int $flag): bool
     {
         return $this->flags->is($flag);
-    }
-
-    /**
-     * @param Envelope $envelope
-     *
-     * @return Route
-     */
-    public function route(Envelope $envelope): Route
-    {
-        $type = $envelope->type;
-        $bind = $this->bind[$type] ?? $this->name;
-
-        if (is_array($bind)) {
-            [$exchange, $route] = array_values($bind);
-        } else {
-            $exchange = $bind;
-            $route    = strtolower(str_replace('\\', '.', $type));
-        }
-
-        return new Route($exchange, $route);
     }
 
     /**

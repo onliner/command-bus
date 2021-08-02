@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Onliner\CommandBus\Remote;
+namespace Onliner\CommandBus\Remote\Transport;
 
-class Router implements Transport
+use Onliner\CommandBus\Remote\Consumer;
+use Onliner\CommandBus\Remote\Envelope;
+use Onliner\CommandBus\Remote\Transport;
+
+class MultiTransport implements Transport
 {
     /**
      * @var Transport

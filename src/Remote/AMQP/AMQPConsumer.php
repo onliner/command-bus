@@ -71,7 +71,7 @@ final class AMQPConsumer implements Consumer
      */
     public function listen(string $pattern): void
     {
-        $this->consume(new Queue(md5($pattern), $pattern, $this->exchange->flags()));
+        $this->consume(new Queue($pattern, $pattern, $this->exchange->flags()));
     }
 
     /**
@@ -141,7 +141,6 @@ final class AMQPConsumer implements Consumer
         $this->exchange->declare($channel);
 
         foreach ($this->queues as $queue) {
-            $queue->declare($channel);
             $queue->consume($channel, $this->exchange, $handler);
         }
 

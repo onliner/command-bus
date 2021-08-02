@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Onliner\CommandBus\Remote\InMemory;
+namespace Onliner\CommandBus\Remote\Transport;
 
 use Onliner\CommandBus\Dispatcher;
 use Onliner\CommandBus\Remote\Consumer;
@@ -10,7 +10,7 @@ use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
 use Throwable;
 
-final class InMemoryTransport implements Transport, Consumer
+final class MemoryTransport implements Transport, Consumer
 {
     /**
      * @var array<string, array<Envelope>>

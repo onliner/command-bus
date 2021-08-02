@@ -16,9 +16,7 @@ class MiddlewareResolverTest extends TestCase
     public function testEmptyStack(): void
     {
         $command = new Command\Hello('onliner');
-        $handler = function () {
-            self::doesNotPerformAssertions();
-        };
+        $handler = function () {};
 
         $parent = self::createMock(Resolver::class);
         $parent

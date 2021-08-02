@@ -14,9 +14,7 @@ class ClassMapResolverTest extends TestCase
     public function testResolve(): void
     {
         $command = new Command\Hello('onliner');
-        $handler = function () {
-            self::doesNotPerformAssertions();
-        };
+        $handler = function () {};
 
         $resolver = new Resolver\CallableResolver();
         $resolver->register(get_class($command), $handler);

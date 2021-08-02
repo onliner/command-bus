@@ -42,6 +42,14 @@ class AMQPFlags
     }
 
     /**
+     * @return self
+     */
+    public static function default(): self
+    {
+        return self::compute();
+    }
+
+    /**
      * @param array<string, mixed> $options
      *
      * @return self

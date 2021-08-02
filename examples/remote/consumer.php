@@ -18,7 +18,7 @@ $builder->handle(SendEmail::class, function (SendEmail $command) {
 $dispatcher = $builder->build();
 
 $transport = AMQPTransport::create('amqp://guest:guest@localhost:5672', [
-    'exchange' => 'mailer',
+    'exchange' => 'foo',
 ]);
 
 /** @var AMQPConsumer $consumer */

@@ -32,7 +32,7 @@ final class RemoteExtension implements Extension
      */
     public function __construct(Transport $transport = null, Serializer $serializer = null)
     {
-        $this->transport  = $transport ?? new InMemory\InMemoryTransport();
+        $this->transport  = $transport ?? new Transport\MemoryTransport();
         $this->serializer = $serializer ?? new Serializer\NativeSerializer();
     }
 

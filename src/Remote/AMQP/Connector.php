@@ -97,4 +97,15 @@ class Connector
 
         return $this->channel = $connection->channel();
     }
+
+    public function __destruct()
+    {
+        if ($this->heartbeats !== null) {
+            $this->heartbeats->unregister();
+        }
+
+        if ($this->channel !== null) {
+            $this->channel->close();
+        }
+    }
 }
