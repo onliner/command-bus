@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus;
 
+use Onliner\CommandBus\Message\MessageIterator;
+
+/**
+ * @internal
+ */
 final class Context
 {
     /**
@@ -12,18 +17,25 @@ final class Context
     private $dispatcher;
 
     /**
+     * @var MessageIterator
+     */
+    private $deferred;
+
+    /**
      * @var array<mixed>
      */
     private $options;
 
     /**
-     * @param Dispatcher   $dispatcher
-     * @param array<mixed> $options
+     * @param Dispatcher             $dispatcher
+     * @param MessageIterator<array> $deferred
+     * @param array<mixed>           $options
      */
-    public function __construct(Dispatcher $dispatcher, array $options = [])
+    public function __construct(Dispatcher $dispatcher, MessageIterator $deferred, array $options = [])
     {
         $this->dispatcher = $dispatcher;
-        $this->options    = $options;
+        $this->deferred = $deferred;
+        $this->options = $options;
     }
 
     /**
@@ -35,6 +47,19 @@ final class Context
     public function dispatch(object $message, array $options = []): void
     {
         $this->dispatcher->dispatch($message, $options);
+    }
+
+    /**
+     * @param object       $message
+     * @param array<mixed> $options
+     *
+     * @return self
+     */
+    public function defer(object $message, array $options = []): self
+    {
+        $this->deferred->append($message, $options);
+
+        return $this;
     }
 
     /**
