@@ -19,7 +19,8 @@ final class AMQPConsumer implements Consumer
 {
     public const
         OPTION_ATTEMPTS = 'attempts',
-        OPTION_INTERVAL = 'interval'
+        OPTION_INTERVAL = 'interval',
+        OPTION_PREFETCH = 'prefetch'
     ;
 
     private const
@@ -167,7 +168,15 @@ final class AMQPConsumer implements Consumer
             $attempt += 1;
 
             try {
-                return $this->connector->connect();
+                $channel = $this->connector->connect();
+
+                $prefetchCount = filter_var($options[self::OPTION_PREFETCH] ?? null, FILTER_VALIDATE_INT);
+
+                if ($prefetchCount !== false) {
+                    $channel->basic_qos(0, $prefetchCount, false);
+                }
+
+                return $channel;
             } catch (AMQPConnectionClosedException|AMQPIOException $error) {
                 usleep($waitInterval);
             }
