@@ -6,6 +6,7 @@ namespace Onliner\CommandBus\Tests\Resolver;
 
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Dispatcher;
+use Onliner\CommandBus\Message\MessageIterator;
 use Onliner\CommandBus\Middleware;
 use Onliner\CommandBus\Resolver;
 use Onliner\CommandBus\Tests\Command;
@@ -44,7 +45,7 @@ class MiddlewareResolverTest extends TestCase
             ->willReturn($handler)
         ;
 
-        $context = new Context(new Dispatcher($parent));
+        $context = new Context(new Dispatcher($parent), new MessageIterator());
 
         $middleware = self::createMock(Middleware::class);
         $middleware
