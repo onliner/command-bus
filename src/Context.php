@@ -6,9 +6,6 @@ namespace Onliner\CommandBus;
 
 use Onliner\CommandBus\Message\MessageIterator;
 
-/**
- * @internal
- */
 final class Context
 {
     /**
@@ -27,6 +24,8 @@ final class Context
     private $options;
 
     /**
+     * @internal
+     *
      * @param Dispatcher             $dispatcher
      * @param MessageIterator<array> $deferred
      * @param array<mixed>           $options
