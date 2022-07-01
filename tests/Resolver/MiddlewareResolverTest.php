@@ -6,7 +6,6 @@ namespace Onliner\CommandBus\Tests\Resolver;
 
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Dispatcher;
-use Onliner\CommandBus\Message\MessageIterator;
 use Onliner\CommandBus\Middleware;
 use Onliner\CommandBus\Resolver;
 use Onliner\CommandBus\Tests\Command;
@@ -24,8 +23,7 @@ class MiddlewareResolverTest extends TestCase
             ->expects(self::once())
             ->method('resolve')
             ->with($command)
-            ->willReturn($handler)
-        ;
+            ->willReturn($handler);
 
         $resolver = new Resolver\MiddlewareResolver($parent);
 
@@ -42,17 +40,15 @@ class MiddlewareResolverTest extends TestCase
             ->expects(self::once())
             ->method('resolve')
             ->with($command)
-            ->willReturn($handler)
-        ;
+            ->willReturn($handler);
 
-        $context = new Context(new Dispatcher($parent), new MessageIterator());
+        $context = new Context\RootContext(new Dispatcher($parent));
 
         $middleware = self::createMock(Middleware::class);
         $middleware
             ->expects(self::once())
             ->method('call')
-            ->with($command, $context, $handler)
-        ;
+            ->with($command, $context, $handler);
 
         $resolver = new Resolver\MiddlewareResolver($parent);
         $resolver->register($middleware);

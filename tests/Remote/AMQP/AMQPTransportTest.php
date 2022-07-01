@@ -55,15 +55,13 @@ class AMQPTransportTest extends TestCase
         $channel
             ->expects(self::exactly(2))
             ->method('basic_publish')
-            ->with($message, 'amqp.topic', $envelope->type, false, false)
-        ;
+            ->with($message, 'amqp.topic', $envelope->type, false, false);
 
         $connector = self::createMock(Connector::class);
         $connector
             ->expects(self::exactly(2))
             ->method('connect')
-            ->willReturn($channel)
-        ;
+            ->willReturn($channel);
 
         $transport = new AMQPTransport($connector, Exchange::create([]));
         $transport->send($envelope);

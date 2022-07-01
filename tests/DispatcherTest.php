@@ -7,6 +7,7 @@ namespace Onliner\CommandBus\Tests;
 use Onliner\CommandBus\Builder;
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Exception;
+use Onliner\CommandBus\Middleware\DeferMiddleware;
 use PHPUnit\Framework\TestCase;
 
 class DispatcherTest extends TestCase
@@ -31,16 +32,18 @@ class DispatcherTest extends TestCase
     public function testDefer(): void
     {
         $result = '';
+        $handler = function (Command\Hello $command, Context\DeferContext $context) use (&$result) {
+            $result .= $command->name;
+
+            if ($command->name === 'foo') {
+                $context->defer(new Command\Hello('baz'));
+                $context->dispatch(new Command\Hello('bar'));
+            }
+        };
 
         $dispatcher = (new Builder())
-            ->handle(Command\Hello::class, function (Command\Hello $command, Context $context) use (&$result) {
-                $result .= $command->name;
-
-                if ($command->name === 'foo') {
-                    $context->defer(new Command\Hello('baz'));
-                    $context->dispatch(new Command\Hello('bar'));
-                }
-            })
+            ->middleware(new DeferMiddleware())
+            ->handle(Command\Hello::class, $handler)
             ->build();
 
         $dispatcher->dispatch(new Command\Hello('foo'));
@@ -51,16 +54,18 @@ class DispatcherTest extends TestCase
     public function testDeferExecuteOnException(): void
     {
         $result = '';
+        $handler = function (Command\Hello $command, Context\DeferContext $context) use (&$result) {
+            $result .= $command->name;
+
+            $context->defer(new Command\Hello('bar'));
+
+            throw new \RuntimeException('Failed');
+        };
 
         try {
             $dispatcher = (new Builder())
-                ->handle(Command\Hello::class, function ($command, Context $context) use (&$result) {
-                    $result .= $command->name;
-
-                    $context->defer(new Command\Hello('bar'));
-
-                    throw new \RuntimeException('Failed');
-                })
+                ->middleware(new DeferMiddleware())
+                ->handle(Command\Hello::class, $handler)
                 ->build();
 
             $dispatcher->dispatch(new Command\Hello('foo'));

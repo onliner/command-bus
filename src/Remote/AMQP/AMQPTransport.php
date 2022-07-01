@@ -96,7 +96,7 @@ final class AMQPTransport implements Transport
     }
 
     /**
-     * @return Consumer
+     * {@inheritDoc}
      */
     public function consume(): Consumer
     {

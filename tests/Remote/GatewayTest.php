@@ -6,7 +6,6 @@ namespace Onliner\CommandBus\Tests\Remote;
 
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Dispatcher;
-use Onliner\CommandBus\Message\MessageIterator;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Gateway;
 use Onliner\CommandBus\Remote\Serializer;
@@ -28,7 +27,7 @@ class GatewayTest extends TestCase
         ];
 
         $dispatcher = new Dispatcher(new CallableResolver());
-        $context = new Context($dispatcher, new MessageIterator(), $headers);
+        $context = new Context\RootContext($dispatcher, $headers);
 
         $gateway = new Gateway($transport, $serializer);
         $gateway->send($command, $context);
