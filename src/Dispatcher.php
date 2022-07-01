@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus;
 
-use Onliner\CommandBus\Message\MessageIterator;
-
 final class Dispatcher
 {
     /**
@@ -30,15 +28,7 @@ final class Dispatcher
     public function dispatch(object $message, array $options = []): void
     {
         $handler = $this->resolver->resolve($message);
-        $deferred = new MessageIterator();
-        $context = new Context($this, $deferred, $options);
 
-        $handler($message, $context);
-
-        foreach ($deferred as $item) {
-            [$deferredMessage, $deferredOptions] = $item;
-
-            $this->dispatch($deferredMessage, $deferredOptions);
-        }
+        $handler($message, new Context\RootContext($this, $options));
     }
 }

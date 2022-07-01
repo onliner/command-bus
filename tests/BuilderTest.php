@@ -63,8 +63,7 @@ class BuilderTest extends TestCase
         $extension
             ->expects(self::once())
             ->method('setup')
-            ->with($builder)
-        ;
+            ->with($builder);
 
         $builder->use($extension)->build();
     }
