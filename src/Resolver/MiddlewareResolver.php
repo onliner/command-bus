@@ -11,21 +11,15 @@ use Onliner\CommandBus\Resolver;
 final class MiddlewareResolver implements Resolver
 {
     /**
-     * @var Resolver
-     */
-    private $resolver;
-
-    /**
      * @var array<Middleware>
      */
-    private $stack = [];
+    private array $stack = [];
 
     /**
      * @param Resolver   $resolver
      */
-    public function __construct(Resolver $resolver)
+    public function __construct(private Resolver $resolver)
     {
-        $this->resolver = $resolver;
     }
 
     /**

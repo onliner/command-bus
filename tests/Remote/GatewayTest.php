@@ -6,7 +6,7 @@ namespace Onliner\CommandBus\Tests\Remote;
 
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Dispatcher;
-use Onliner\CommandBus\Message\MessageIterator;
+use Onliner\CommandBus\Message\DeferredIterator;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Gateway;
 use Onliner\CommandBus\Remote\Serializer;
@@ -28,7 +28,7 @@ class GatewayTest extends TestCase
         ];
 
         $dispatcher = new Dispatcher(new CallableResolver());
-        $context = new Context($dispatcher, new MessageIterator(), $headers);
+        $context = new Context($dispatcher, new DeferredIterator(), $headers);
 
         $gateway = new Gateway($transport, $serializer);
         $gateway->send($command, $context);
@@ -41,7 +41,7 @@ class GatewayTest extends TestCase
         $envelope = reset($queue);
 
         self::assertInstanceOf(Envelope::class, $envelope);
-        self::assertSame(Hello::class, $envelope->type);
+        self::assertSame(Hello::class, $envelope->class);
         self::assertSame(serialize($command), $envelope->payload);
         self::assertSame($headers, $envelope->headers);
     }

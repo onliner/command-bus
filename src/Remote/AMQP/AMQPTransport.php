@@ -11,7 +11,6 @@ use Onliner\CommandBus\Remote\Transport;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 final class AMQPTransport implements Transport
 {
@@ -20,41 +19,17 @@ final class AMQPTransport implements Transport
     ];
 
     /**
-     * @var Connector
-     */
-    private $connector;
-
-    /**
-     * @var Exchange
-     */
-    private $exchange;
-
-    /**
-     * @var Router
-     */
-    private $router;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
      * @param Connector            $connector
      * @param Exchange             $exchange
-     * @param Router|null          $router
+     * @param Router               $router
      * @param LoggerInterface|null $logger
      */
     public function __construct(
-        Connector $connector,
-        Exchange $exchange,
-        Router $router = null,
-        LoggerInterface $logger = null
+        private Connector $connector,
+        private Exchange $exchange,
+        private Router $router,
+        private ?LoggerInterface $logger = null
     ) {
-        $this->connector = $connector;
-        $this->exchange  = $exchange;
-        $this->router    = $router ?? new SimpleRouter();
-        $this->logger    = $logger ?? new NullLogger();
     }
 
     /**
@@ -65,9 +40,13 @@ final class AMQPTransport implements Transport
      */
     public static function create(string $dsn, array $options = []): self
     {
-        $resolver = new SimpleRouter($options['routes'] ?? []);
+        if (!is_array($routes = $options['routes'] ?? false)) {
+            $routes = [];
+        }
 
-        return new self(Connector::create($dsn), Exchange::create($options), $resolver);
+        $router = new SimpleRouter(array_filter($routes, 'is_string'));
+
+        return new self(Connector::create($dsn), Exchange::create($options), $router);
     }
 
     /**
@@ -76,7 +55,7 @@ final class AMQPTransport implements Transport
     public function send(Envelope $envelope): void
     {
         $headers = $envelope->headers + [
-            Exchange::HEADER_MESSAGE_TYPE => $envelope->type,
+            Exchange::HEADER_MESSAGE_TYPE => $envelope->class,
         ];
 
         $message = new AMQPMessage($envelope->payload, self::MESSAGE_PROPERTIES);
@@ -90,8 +69,6 @@ final class AMQPTransport implements Transport
             $message,
             $route->exchange(),
             $route->name(),
-            false,
-            false
         );
     }
 

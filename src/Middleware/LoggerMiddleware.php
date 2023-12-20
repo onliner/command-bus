@@ -13,23 +13,11 @@ use Throwable;
 final class LoggerMiddleware implements Middleware
 {
     /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @var string
-     */
-    private $level;
-
-    /**
      * @param LoggerInterface $logger
      * @param string          $level
      */
-    public function __construct(LoggerInterface $logger, string $level = LogLevel::ERROR)
+    public function __construct(private LoggerInterface $logger, private string $level = LogLevel::ERROR)
     {
-        $this->logger = $logger;
-        $this->level  = $level;
     }
 
     /**

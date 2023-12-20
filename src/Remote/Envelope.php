@@ -7,29 +7,11 @@ namespace Onliner\CommandBus\Remote;
 final class Envelope
 {
     /**
-     * @var string
-     */
-    public $type;
-
-    /**
-     * @var string
-     */
-    public $payload;
-
-    /**
-     * @var array<mixed>
-     */
-    public $headers;
-
-    /**
-     * @param string       $type
+     * @param class-string $class
      * @param string       $payload
      * @param array<mixed> $headers
      */
-    public function __construct(string $type, string $payload, array $headers = [])
+    public function __construct(public string $class, public string $payload, public array $headers = [])
     {
-        $this->type    = $type;
-        $this->payload = $payload;
-        $this->headers = $headers;
     }
 }

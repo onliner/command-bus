@@ -12,7 +12,7 @@ final class CallableResolver implements Resolver
     /**
      * @var array<string, callable>
      */
-    private $handlers = [];
+    private array $handlers = [];
 
     /**
      * @param string   $class
@@ -36,8 +36,6 @@ final class CallableResolver implements Resolver
             }
         } while ($class = get_parent_class($class));
 
-        return static function () use ($command) {
-            throw Exception\UnknownHandlerException::forCommand($command);
-        };
+        return fn () => throw new Exception\UnknownHandlerException(get_class($command));
     }
 }

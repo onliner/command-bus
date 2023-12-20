@@ -7,23 +7,11 @@ namespace Onliner\CommandBus\Remote\AMQP;
 final class Route
 {
     /**
-     * @var string
-     */
-    private $exchange;
-
-    /**
-     * @var string
-     */
-    private $name;
-
-    /**
      * @param string $exchange
      * @param string $name
      */
-    public function __construct(string $exchange, string $name)
+    public function __construct(private string $exchange, private string $name)
     {
-        $this->exchange = $exchange;
-        $this->name     = $name;
     }
 
     /**

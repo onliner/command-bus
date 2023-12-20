@@ -5,23 +5,17 @@ declare(strict_types=1);
 namespace Onliner\CommandBus\Remote\AMQP\Router;
 
 use Onliner\CommandBus\Remote\AMQP\Exchange;
-use Onliner\CommandBus\Remote\AMQP\Router;
 use Onliner\CommandBus\Remote\AMQP\Route;
+use Onliner\CommandBus\Remote\AMQP\Router;
 use Onliner\CommandBus\Remote\Envelope;
 
 final class SimpleRouter implements Router
 {
     /**
-     * @var array<string,mixed>
+     * @param array<string, string> $routes
      */
-    private $routes;
-
-    /**
-     * @param array<string,mixed> $routes
-     */
-    public function __construct(array $routes = [])
+    public function __construct(private array $routes = [])
     {
-        $this->routes = $routes;
     }
 
     /**
@@ -29,8 +23,8 @@ final class SimpleRouter implements Router
      */
     public function match(Envelope $envelope, Exchange $exchange): Route
     {
-        $target = $this->exchange($envelope->type, $exchange->name());
-        $name = strtolower(str_replace('\\', '.', $envelope->type));
+        $target = $this->exchange($envelope->class, $exchange->name());
+        $name = strtolower(str_replace('\\', '.', $envelope->class));
 
         return new Route($target, $name);
     }

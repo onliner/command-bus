@@ -9,15 +9,12 @@ use Onliner\CommandBus\Extension;
 
 final class RetryExtension implements Extension
 {
-    /**
-     * @var Policy
-     */
-    private $default;
+    private Policy $default;
 
     /**
      * @var array<string, Policy>
      */
-    private $policies = [];
+    private array $policies = [];
 
     /**
      * @param Policy|null $default

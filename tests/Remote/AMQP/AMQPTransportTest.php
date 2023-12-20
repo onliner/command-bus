@@ -8,7 +8,9 @@ use InvalidArgumentException;
 use Onliner\CommandBus\Remote\AMQP\AMQPTransport;
 use Onliner\CommandBus\Remote\AMQP\Connector;
 use Onliner\CommandBus\Remote\AMQP\Exchange;
+use Onliner\CommandBus\Remote\AMQP\Router\SimpleRouter;
 use Onliner\CommandBus\Remote\Envelope;
+use Onliner\CommandBus\Tests\Command\Hello;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
@@ -38,12 +40,12 @@ class AMQPTransportTest extends TestCase
 
     public function testSend(): void
     {
-        $envelope = new Envelope('target', 'payload', [
+        $envelope = new Envelope(Hello::class, 'payload', [
             'foo' => 'bar',
         ]);
 
         $headers = $envelope->headers + [
-            'x-message-type' => $envelope->type,
+            'x-message-type' => $envelope->class,
         ];
 
         $message = new AMQPMessage($envelope->payload, [
@@ -55,7 +57,7 @@ class AMQPTransportTest extends TestCase
         $channel
             ->expects(self::exactly(2))
             ->method('basic_publish')
-            ->with($message, 'amqp.topic', $envelope->type, false, false)
+            ->with($message, 'amqp.topic', strtolower(str_replace('\\', '.', $envelope->class)), false, false)
         ;
 
         $connector = self::createMock(Connector::class);
@@ -65,7 +67,7 @@ class AMQPTransportTest extends TestCase
             ->willReturn($channel)
         ;
 
-        $transport = new AMQPTransport($connector, Exchange::create([]));
+        $transport = new AMQPTransport($connector, Exchange::create([]), new SimpleRouter());
         $transport->send($envelope);
         $transport->send($envelope);
     }

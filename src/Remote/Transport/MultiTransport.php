@@ -11,21 +11,15 @@ use Onliner\CommandBus\Remote\Transport;
 class MultiTransport implements Transport
 {
     /**
-     * @var Transport
-     */
-    private $default;
-
-    /**
      * @var array<string, Transport>
      */
-    private $transports = [];
+    private array $transports = [];
 
     /**
      * @param Transport $default
      */
-    public function __construct(Transport $default)
+    public function __construct(private Transport $default)
     {
-        $this->default = $default;
     }
 
     /**
@@ -44,7 +38,7 @@ class MultiTransport implements Transport
      */
     public function send(Envelope $envelope): void
     {
-        $this->match($envelope->type)->send($envelope);
+        $this->match($envelope->class)->send($envelope);
     }
 
     /**

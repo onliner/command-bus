@@ -9,20 +9,13 @@ use Onliner\CommandBus\Extension;
 
 final class RemoteExtension implements Extension
 {
-    /**
-     * @var Transport
-     */
-    private $transport;
-
-    /**
-     * @var Serializer
-     */
-    private $serializer;
+    private Transport $transport;
+    private Serializer $serializer;
 
     /**
      * @var array<string>
      */
-    private $local = [
+    private array $local = [
         Envelope::class,
     ];
 
