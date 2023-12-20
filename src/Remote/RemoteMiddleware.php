@@ -37,6 +37,6 @@ final class RemoteMiddleware implements Middleware
      */
     private function isLocal(string $class, Context $context): bool
     {
-        return $context->has(Gateway::OPTION_LOCAL) || in_array($class, $this->local);
+        return $context->isLocal() || in_array($class, $this->local);
     }
 }
