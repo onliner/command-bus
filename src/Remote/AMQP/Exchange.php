@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
+use InvalidArgumentException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -26,25 +27,7 @@ final class Exchange
         HEADER_MESSAGE_TYPE = 'x-message-type'
     ;
 
-    /**
-     * @var string
-     */
-    private $name;
-
-    /**
-     * @var string
-     */
-    private $type;
-
-    /**
-     * @var AMQPFlags
-     */
-    private $flags;
-
-    /**
-     * @var array<string, string>
-     */
-    private $args;
+    private AMQPFlags $flags;
 
     /**
      * @param string                 $name
@@ -53,15 +36,12 @@ final class Exchange
      * @param array<string, string>  $args
      */
     public function __construct(
-        string $name,
-        string $type = self::TYPE_TOPIC,
+        private string $name,
+        private string $type = self::TYPE_TOPIC,
         AMQPFlags $flags = null,
-        array $args = []
+        private array $args = []
     ) {
-        $this->name  = $name;
-        $this->type  = $type;
         $this->flags = $flags ?? AMQPFlags::default();
-        $this->args  = $args;
     }
 
     /**
@@ -72,15 +52,27 @@ final class Exchange
     public static function create(array $options): self
     {
         $type  = $options['type'] ?? self::TYPE_TOPIC;
-        $name  = $options['exchange'] ?? sprintf('amqp.%s', $type);
-        $flags = AMQPFlags::compute($options);
-        $args  = $options['args'] ?? [];
+
+        if (!is_string($type)) {
+            throw new InvalidArgumentException('Exchange type must be a string');
+        }
+
+        $name = $options['exchange'] ?? sprintf('amqp.%s', $type);
+        $args = $options['args'] ?? [];
+
+        if (!is_string($name)) {
+            throw new InvalidArgumentException('Exchange name must be a string');
+        }
+
+        if (!is_array($args)) {
+            throw new InvalidArgumentException('Exchange arguments must be an array');
+        }
 
         if ($type === self::TYPE_DELAYED && !isset($args['x-delayed-type'])) {
             $args['x-delayed-type'] = self::TYPE_TOPIC;
         }
 
-        return new self($name, $type, $flags, $args);
+        return new self($name, $type, AMQPFlags::compute($options), $args);
     }
 
     /**

@@ -8,26 +8,12 @@ use Onliner\CommandBus\Context;
 
 final class Gateway
 {
-    public const OPTION_LOCAL = 'local';
-
-    /**
-     * @var Transport
-     */
-    private $transport;
-
-    /**
-     * @var Serializer
-     */
-    private $serializer;
-
     /**
      * @param Transport  $transport
      * @param Serializer $serializer
      */
-    public function __construct(Transport $transport, Serializer $serializer)
+    public function __construct(private Transport $transport, private Serializer $serializer)
     {
-        $this->transport  = $transport;
-        $this->serializer = $serializer;
     }
 
     /**
@@ -53,8 +39,6 @@ final class Gateway
     {
         $message = $this->serializer->unserialize($envelope);
 
-        $context->dispatch($message, [
-            self::OPTION_LOCAL => true,
-        ]);
+        $context->execute($message, $envelope->headers);
     }
 }

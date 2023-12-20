@@ -10,23 +10,11 @@ use Onliner\CommandBus\Middleware;
 final class RemoteMiddleware implements Middleware
 {
     /**
-     * @var Gateway
-     */
-    private $gateway;
-
-    /**
-     * @var array<string>
-     */
-    private $local;
-
-    /**
      * @param Gateway       $gateway
      * @param array<string> $local
      */
-    public function __construct(Gateway $gateway, array $local = [])
+    public function __construct(private Gateway $gateway, private array $local = [])
     {
-        $this->gateway = $gateway;
-        $this->local   = $local;
     }
 
     /**
@@ -49,6 +37,6 @@ final class RemoteMiddleware implements Middleware
      */
     private function isLocal(string $class, Context $context): bool
     {
-        return $context->has(Gateway::OPTION_LOCAL) || in_array($class, $this->local);
+        return $context->isLocal() || in_array($class, $this->local);
     }
 }

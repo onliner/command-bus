@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\Serializer;
 
+use Onliner\CommandBus\Exception;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Serializer;
 
@@ -22,6 +23,12 @@ final class NativeSerializer implements Serializer
      */
     public function unserialize(Envelope $envelope): object
     {
-        return unserialize($envelope->payload);
+        $message = unserialize($envelope->payload);
+
+        if (!$message instanceof $envelope->class) {
+            throw new Exception\InvalidMessageException($envelope->class);
+        }
+
+        return $message;
     }
 }

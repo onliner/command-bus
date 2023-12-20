@@ -12,34 +12,15 @@ use PhpAmqpLib\Connection\Heartbeat\PCNTLHeartbeatSender;
 
 class Connector
 {
-    /**
-     * @var array<array<mixed>>
-     */
-    private $hosts;
+    private ?AMQPChannel $channel = null;
+    private ?PCNTLHeartbeatSender $heartbeats = null;
 
     /**
-     * @var array<string, mixed>
+     * @param array<array<mixed>>      $hosts
+     * @param array<string|int, mixed> $options
      */
-    private $options;
-
-    /**
-     * @var AMQPChannel|null
-     */
-    private $channel;
-
-    /**
-     * @var PCNTLHeartbeatSender|null
-     */
-    private $heartbeats;
-
-    /**
-     * @param array<array<mixed>> $hosts
-     * @param array<string, mixed> $options
-     */
-    public function __construct(array $hosts, array $options)
+    public function __construct(private array $hosts, private array $options)
     {
-        $this->hosts = $hosts;
-        $this->options = $options;
     }
 
     /**
@@ -100,12 +81,7 @@ class Connector
 
     public function __destruct()
     {
-        if ($this->heartbeats !== null) {
-            $this->heartbeats->unregister();
-        }
-
-        if ($this->channel !== null) {
-            $this->channel->close();
-        }
+        $this->heartbeats?->unregister();
+        $this->channel?->close();
     }
 }

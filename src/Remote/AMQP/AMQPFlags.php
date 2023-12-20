@@ -29,16 +29,10 @@ class AMQPFlags
     ];
 
     /**
-     * @var int
-     */
-    private $value;
-
-    /**
      * @param int $value
      */
-    public function __construct(int $value)
+    public function __construct(private int $value)
     {
-        $this->value = $value;
     }
 
     /**

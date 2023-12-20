@@ -6,8 +6,8 @@ namespace Onliner\CommandBus\Exception;
 
 final class UnknownHandlerException extends CommandBusException
 {
-    public static function forCommand(object $command): self
+    public function __construct(string $class)
     {
-        return new self(sprintf('Handler for command "%s" not found.', get_class($command)));
+        parent::__construct(sprintf('Handler for command "%s" not found.', $class));
     }
 }

@@ -11,6 +11,7 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exception\AMQPConnectionClosedException;
 use PhpAmqpLib\Exception\AMQPIOException;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPAbstractCollection;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;
@@ -28,41 +29,25 @@ final class AMQPConsumer implements Consumer
         DEFAULT_INTERVAL = 1000000
     ;
 
-    /**
-     * @var Connector
-     */
-    private $connector;
+    private LoggerInterface $logger;
+    private bool $running = false;
 
     /**
-     * @var Exchange
+     * @var Queue[]
      */
-    private $exchange;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @var array<Queue>
-     */
-    private $queues = [];
-
-    /**
-     * @var bool
-     */
-    private $running = false;
+    private array $queues = [];
 
     /**
      * @param Connector            $connector
      * @param Exchange             $exchange
      * @param LoggerInterface|null $logger
      */
-    public function __construct(Connector $connector, Exchange $exchange, LoggerInterface $logger = null)
-    {
-        $this->connector = $connector;
-        $this->exchange  = $exchange;
-        $this->logger    = $logger ?? new NullLogger();
+    public function __construct(
+        private Connector $connector,
+        private Exchange $exchange,
+        LoggerInterface $logger = null
+    ) {
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -193,8 +178,15 @@ final class AMQPConsumer implements Consumer
      */
     private function handle(AMQPMessage $message, Dispatcher $dispatcher): void
     {
-        $headers = $message->get('application_headers')->getNativeData();
-        $headers = array_merge($headers, [
+        $headers = $message->get('application_headers');
+
+        if (!$headers instanceof AMQPAbstractCollection) {
+            $this->logger->warning('Message headers not found.');
+
+            return;
+        }
+
+        $headers = array_replace($headers->getNativeData(), [
             Exchange::HEADER_EXCHANGE     => $message->getExchange(),
             Exchange::HEADER_ROUTING_KEY  => $message->getRoutingKey(),
             Exchange::HEADER_CONSUMER_TAG => $message->getConsumerTag(),
@@ -208,8 +200,9 @@ final class AMQPConsumer implements Consumer
             return;
         }
 
-        $type = $headers[Exchange::HEADER_MESSAGE_TYPE];
+        /** @var class-string $class */
+        $class = $headers[Exchange::HEADER_MESSAGE_TYPE];
 
-        $dispatcher->dispatch(new Envelope($type, $message->getBody(), $headers));
+        $dispatcher->dispatch(new Envelope($class, $message->getBody(), $headers));
     }
 }

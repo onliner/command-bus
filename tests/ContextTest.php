@@ -6,7 +6,8 @@ namespace Onliner\CommandBus\Tests;
 
 use Onliner\CommandBus\Builder;
 use Onliner\CommandBus\Context;
-use Onliner\CommandBus\Message\MessageIterator;
+use Onliner\CommandBus\Message\Deferred;
+use Onliner\CommandBus\Message\DeferredIterator;
 use Onliner\CommandBus\Tests\Command;
 use PHPUnit\Framework\TestCase;
 
@@ -19,14 +20,14 @@ class ContextTest extends TestCase
             'baz' => 1,
         ];
 
-        $context = new Context((new Builder())->build(), new MessageIterator(), $options);
+        $context = new Context((new Builder())->build(), new DeferredIterator(), $options);
 
         self::assertEquals($options, $context->all());
     }
 
     public function testOptions(): void
     {
-        $context = new Context((new Builder())->build(), new MessageIterator());
+        $context = new Context((new Builder())->build(), new DeferredIterator());
 
         self::assertEmpty($context->all());
 
@@ -71,17 +72,15 @@ class ContextTest extends TestCase
 
     public function testDefer(): void
     {
-        $actualDeferred = new MessageIterator();
-        $context = new Context((new Builder())->build(), $actualDeferred);
+        $iterator = new DeferredIterator();
+        $context = new Context((new Builder())->build(), $iterator);
         $context->defer(new Command\Hello('bar'));
 
-        foreach ($actualDeferred as $actualDeferredMessage) {
-            self::assertIsArray($actualDeferredMessage);
-
-            [$message, $options] = $actualDeferredMessage;
-            self::assertInstanceOf(Command\Hello::class, $message);
-            self::assertSame('bar', $message->name);
-            self::assertIsArray($options);
+        foreach ($iterator as $deferred) {
+            self::assertInstanceOf(Deferred::class, $deferred);
+            self::assertInstanceOf(Command\Hello::class, $deferred->message);
+            self::assertSame('bar', $deferred->message->name);
+            self::assertIsArray($deferred->options);
         }
     }
 }

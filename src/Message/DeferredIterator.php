@@ -8,30 +8,30 @@ use Generator;
 use IteratorAggregate;
 
 /**
- * @implements IteratorAggregate<array>
+ * @implements IteratorAggregate<Deferred>
  */
-class MessageIterator implements IteratorAggregate
+class DeferredIterator implements IteratorAggregate
 {
     /**
-     * @var array<array>
+     * @var array<Deferred>
      */
-    private $messages = [];
+    private array $messages = [];
 
     /**
-     * @param object       $message
-     * @param array<mixed> $options
+     * @param object               $message
+     * @param array<string, mixed> $options
      *
-     * @return self<array>
+     * @return self
      */
     public function append(object $message, array $options): self
     {
-        $this->messages[] = [$message, $options];
+        $this->messages[] = new Deferred($message, $options);
 
         return $this;
     }
 
     /**
-     * @return Generator<array>
+     * @return Generator<Deferred>
      */
     public function getIterator(): Generator
     {

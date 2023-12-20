@@ -13,23 +13,11 @@ final class SimplePolicy implements Policy
     private const OPTION_ATTEMPT = 'attempt';
 
     /**
-     * @var int
-     */
-    private $retries;
-
-    /**
-     * @var int
-     */
-    private $delay;
-
-    /**
      * @param int $retries
      * @param int $delay
      */
-    public function __construct(int $retries, int $delay = 0)
+    public function __construct(private int $retries, private int $delay = 0)
     {
-        $this->retries = $retries;
-        $this->delay   = $delay;
     }
 
     /**

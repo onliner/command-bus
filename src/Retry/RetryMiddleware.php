@@ -11,23 +11,11 @@ use Throwable;
 final class RetryMiddleware implements Middleware
 {
     /**
-     * @var Policy
+     * @param Policy                $default
+     * @param array<string, Policy> $policies
      */
-    private $default;
-
-    /**
-     * @var array<string, Policy>
-     */
-    private $policies;
-
-    /**
-     * @param Policy   $default
-     * @param Policy[] $policies
-     */
-    public function __construct(Policy $default, array $policies)
+    public function __construct(private Policy $default, private array $policies)
     {
-        $this->default  = $default;
-        $this->policies = $policies;
     }
 
     /**

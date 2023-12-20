@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
+use InvalidArgumentException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -16,25 +17,8 @@ final class Queue
         DEAD_LETTER  = 'x-dead-letter-exchange'
     ;
 
-    /**
-     * @var string
-     */
-    private $name;
-
-    /**
-     * @var string
-     */
-    private $pattern;
-
-    /**
-     * @var AMQPFlags
-     */
-    private $flags;
-
-    /**
-     * @var array<string, string>
-     */
-    private $args;
+    private string $pattern;
+    private AMQPFlags $flags;
 
     /**
      * @param string                $name
@@ -42,12 +26,14 @@ final class Queue
      * @param AMQPFlags|null        $flags
      * @param array<string, string> $args
      */
-    public function __construct(string $name, string $pattern = null, AMQPFlags $flags = null, array $args = [])
-    {
-        $this->name    = $name;
+    public function __construct(
+        private string $name,
+        string $pattern = null,
+        AMQPFlags $flags = null,
+        private array $args = []
+    ) {
         $this->pattern = $pattern ?? $name;
         $this->flags   = $flags ?? AMQPFlags::default();
-        $this->args    = $args;
     }
 
     /**
@@ -58,9 +44,22 @@ final class Queue
     public static function create(array $options): self
     {
         $pattern = $options['pattern'] ?? '#';
-        $name    = $options['queue'] ?? $pattern;
+        $name = $options['queue'] ?? $pattern;
+        $args = $options['args'] ?? [];
 
-        return new self($name, $pattern, AMQPFlags::compute($options), $options['args'] ?? []);
+        if (!is_string($name)) {
+            throw new InvalidArgumentException('Queue name must be a string');
+        }
+
+        if ($pattern !== null && !is_string($pattern)) {
+            throw new InvalidArgumentException('Queue pattern must be a string or null');
+        }
+
+        if (!is_array($args)) {
+            throw new InvalidArgumentException('Queue arguments must be an array');
+        }
+
+        return new self($name, $pattern, AMQPFlags::compute($options), $args);
     }
 
     /**

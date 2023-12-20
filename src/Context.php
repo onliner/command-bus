@@ -4,42 +4,27 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus;
 
-use Onliner\CommandBus\Message\MessageIterator;
+use Onliner\CommandBus\Message\DeferredIterator;
 
 final class Context
 {
-    /**
-     * @var Dispatcher
-     */
-    private $dispatcher;
+    private const OPTION_LOCAL = 'local';
 
     /**
-     * @var MessageIterator
+     * @param Dispatcher           $dispatcher
+     * @param DeferredIterator     $deferred
+     * @param array<string, mixed> $options
      */
-    private $deferred;
-
-    /**
-     * @var array<mixed>
-     */
-    private $options;
-
-    /**
-     * @internal
-     *
-     * @param Dispatcher             $dispatcher
-     * @param MessageIterator<array> $deferred
-     * @param array<mixed>           $options
-     */
-    public function __construct(Dispatcher $dispatcher, MessageIterator $deferred, array $options = [])
-    {
-        $this->dispatcher = $dispatcher;
-        $this->deferred = $deferred;
-        $this->options = $options;
+    public function __construct(
+        private Dispatcher $dispatcher,
+        private DeferredIterator $deferred,
+        private array $options = []
+    ) {
     }
 
     /**
-     * @param object       $message
-     * @param array<mixed> $options
+     * @param object               $message
+     * @param array<string, mixed> $options
      *
      * @return void
      */
@@ -49,8 +34,20 @@ final class Context
     }
 
     /**
-     * @param object       $message
-     * @param array<mixed> $options
+     * @param object               $message
+     * @param array<string, mixed> $options
+     * @return void
+     */
+    public function execute(object $message, array $options = []): void
+    {
+        $this->dispatcher->dispatch($message, array_replace($options, [
+            self::OPTION_LOCAL => true,
+        ]));
+    }
+
+    /**
+     * @param object               $message
+     * @param array<string, mixed> $options
      *
      * @return self
      */
@@ -62,7 +59,7 @@ final class Context
     }
 
     /**
-     * @return array<mixed>
+     * @return array<string, mixed>
      */
     public function all(): array
     {
@@ -85,7 +82,7 @@ final class Context
      *
      * @return mixed
      */
-    public function get(string $option, $default = null)
+    public function get(string $option, mixed $default = null): mixed
     {
         return $this->options[$option] ?? $default;
     }
@@ -96,7 +93,7 @@ final class Context
      *
      * @return self
      */
-    public function set(string $option, $value): self
+    public function set(string $option, mixed $value): self
     {
         $this->options[$option] = $value;
 
@@ -113,5 +110,13 @@ final class Context
         unset($this->options[$option]);
 
         return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLocal(): bool
+    {
+        return $this->has(self::OPTION_LOCAL);
     }
 }

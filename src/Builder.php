@@ -12,17 +12,17 @@ final class Builder
     /**
      * @var array<string, callable>
      */
-    private $handlers = [];
+    private array $handlers = [];
 
     /**
      * @var array<string, Middleware>
      */
-    private $middleware = [];
+    private array $middleware = [];
 
     /**
      * @var array<string, Extension>
      */
-    private $extensions = [];
+    private array $extensions = [];
 
     /**
      * @param string   $command
