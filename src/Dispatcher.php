@@ -33,4 +33,17 @@ final class Dispatcher
             $this->dispatch($deferred->message, $deferred->options);
         }
     }
+
+    /**
+     * @param object               $message
+     * @param array<string, mixed> $options
+     *
+     * @return void
+     */
+    public function execute(object $message, array $options = []): void
+    {
+        $this->dispatch($message, array_replace($options, [
+            Context::OPTION_LOCAL => true,
+        ]));
+    }
 }

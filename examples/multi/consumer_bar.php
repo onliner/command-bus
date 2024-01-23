@@ -21,4 +21,4 @@ $transport = AMQPTransport::create('amqp://guest:guest@localhost:5673', [
 /** @var AMQPConsumer $consumer */
 $consumer = $transport->consume();
 $consumer->listen('#');
-$consumer->run($dispatcher);
+$consumer->run([$dispatcher, 'dispatch']);

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
-use Onliner\CommandBus\Dispatcher;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use PhpAmqpLib\Channel\AMQPChannel;
@@ -51,13 +50,14 @@ final class AMQPConsumer implements Consumer
     }
 
     /**
-     * @param string $pattern
+     * @param string      $name
+     * @param string|null $pattern
      *
      * @return void
      */
-    public function listen(string $pattern): void
+    public function listen(string $name, string $pattern = null): void
     {
-        $this->consume(new Queue($pattern, $pattern, $this->exchange->flags()));
+        $this->consume(new Queue($name, $pattern, $this->exchange->flags()));
     }
 
     /**
@@ -71,11 +71,11 @@ final class AMQPConsumer implements Consumer
     /**
      * {@inheritDoc}
      */
-    public function run(Dispatcher $dispatcher, array $options = []): void
+    public function run(callable $handler, array $options = []): void
     {
         $this->running = true;
 
-        $channel = $this->channel($dispatcher, $options);
+        $channel = $this->channel($handler, $options);
 
         /** @phpstan-ignore-next-line */
         while ($this->running && $channel->is_consuming()) {
@@ -87,7 +87,7 @@ final class AMQPConsumer implements Consumer
                     throw $error;
                 }
 
-                $channel = $this->channel($dispatcher, $options);
+                $channel = $this->channel($handler, $options);
             } catch (Throwable $error) {
                 $this->logger->error((string) $error);
             }
@@ -105,29 +105,28 @@ final class AMQPConsumer implements Consumer
     }
 
     /**
-     * @param Dispatcher           $dispatcher
+     * @param callable             $handler
      * @param array<string, mixed> $options
      *
      * @return AMQPChannel
      * @throws AMQPIOException
      */
-    private function channel(Dispatcher $dispatcher, array $options): AMQPChannel
+    private function channel(callable $handler, array $options): AMQPChannel
     {
         $channel = $this->connect($options);
-        $handler = function (AMQPMessage $message) use ($dispatcher) {
-            try {
-                $this->handle($message, $dispatcher);
-            } catch (Throwable $error) {
-                $this->logger->error((string) $error);
-            } finally {
-                $message->ack();
-            }
-        };
 
         $this->exchange->declare($channel);
 
         foreach ($this->queues as $queue) {
-            $queue->consume($channel, $this->exchange, $handler);
+            $queue->consume($channel, $this->exchange, function (AMQPMessage $message) use ($handler) {
+                try {
+                    $this->handle($message, $handler);
+                } catch (Throwable $error) {
+                    $this->logger->error((string) $error);
+                } finally {
+                    $message->ack();
+                }
+            });
         }
 
         return $channel;
@@ -172,11 +171,11 @@ final class AMQPConsumer implements Consumer
 
     /**
      * @param AMQPMessage $message
-     * @param Dispatcher  $dispatcher
+     * @param callable    $handler
      *
      * @return void
      */
-    private function handle(AMQPMessage $message, Dispatcher $dispatcher): void
+    private function handle(AMQPMessage $message, callable $handler): void
     {
         $headers = $message->get('application_headers');
 
@@ -203,6 +202,6 @@ final class AMQPConsumer implements Consumer
         /** @var class-string $class */
         $class = $headers[Exchange::HEADER_MESSAGE_TYPE];
 
-        $dispatcher->dispatch(new Envelope($class, $message->getBody(), $headers));
+        $handler(new Envelope($class, $message->getBody(), $headers));
     }
 }
