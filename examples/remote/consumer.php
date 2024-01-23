@@ -38,7 +38,7 @@ if ($priority === 0) {
     ]));
 }
 
-$consumer->run($dispatcher, [
+$consumer->run([$dispatcher, 'dispatch'], [
     AMQPConsumer::OPTION_ATTEMPTS => 10,
     AMQPConsumer::OPTION_INTERVAL => 100000, // 100 ms
 ]);

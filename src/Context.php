@@ -8,7 +8,7 @@ use Onliner\CommandBus\Message\DeferredIterator;
 
 final class Context
 {
-    private const OPTION_LOCAL = 'local';
+    public const OPTION_LOCAL = 'local';
 
     /**
      * @param Dispatcher           $dispatcher

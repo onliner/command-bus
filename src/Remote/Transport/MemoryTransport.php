@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\Transport;
 
-use Onliner\CommandBus\Dispatcher;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
@@ -41,7 +40,7 @@ final class MemoryTransport implements Transport, Consumer
     /**
      * {@inheritDoc}
      */
-    public function run(Dispatcher $dispatcher, array $options = []): void
+    public function run(callable $handler, array $options = []): void
     {
         if ($this->running) {
             return;
@@ -53,8 +52,8 @@ final class MemoryTransport implements Transport, Consumer
             foreach ($this->envelopes as $type => $envelopes) {
                 foreach ($envelopes as $i => $envelope) {
                     try {
-                        $dispatcher->dispatch($envelope);
-                    } catch (Throwable $error) {
+                        $handler($envelope);
+                    } catch (Throwable) {
                         unset($this->envelopes[$type][$i]);
                     }
                 }
@@ -87,13 +86,15 @@ final class MemoryTransport implements Transport, Consumer
     }
 
     /**
-     * @param string $type
+     * @param string|null $type
      *
      * @return array<Envelope>
      */
-    public function receive(string $type): array
+    public function receive(string $type = null): array
     {
-        return $this->envelopes[$type] ?? [];
+        return $type !== null
+            ? $this->envelopes[$type] ?? []
+            : $this->envelopes;
     }
 
     /**
