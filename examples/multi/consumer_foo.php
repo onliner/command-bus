@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Onliner\CommandBus\Builder;
+use Onliner\CommandBus\Remote\AMQP\Exchange;
 use Onliner\CommandBus\Remote\AMQP\Transport;
 use Onliner\CommandBus\Remote\AMQP\Consumer;
 
@@ -13,6 +14,8 @@ $builder->handle(Foo\Hello::class, function (Foo\Hello $command) {
 });
 
 $transport = Transport::create('amqp://guest:guest@localhost:5672');
+$transport->declare(Exchange::create(['name' => 'foo']));
+
 $consumer = $transport->consume();
 $consumer->listen('#', 'foo');
 $consumer->run($builder->build());

@@ -30,13 +30,12 @@ class Packager
 
     public function pack(Envelope $envelope): AMQPMessage
     {
-        $headers = array_replace($envelope->headers, [
-            Headers::MESSAGE_TYPE => $envelope->class,
-        ]);
+        $headers = new AMQPTable($envelope->headers);
+        $headers->set(Headers::MESSAGE_TYPE, $envelope->class);
 
         return new AMQPMessage($envelope->payload, [
             'delivery_mode' => $this->deliveryMode,
-            'application_headers' => new AMQPTable($headers),
+            'application_headers' => $headers,
         ]);
     }
 

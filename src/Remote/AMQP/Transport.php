@@ -45,4 +45,16 @@ final class Transport implements TransportContract
     {
         return new Consumer($this->connector, $this->packager, $this->logger);
     }
+
+    /**
+     * @param Exchange|array<string, mixed> $exchange
+     */
+    public function declare(Exchange|array $exchange): void
+    {
+        if (is_array($exchange)) {
+            $exchange = Exchange::create($exchange);
+        }
+
+        $exchange->declare($this->connector->connect());
+    }
 }

@@ -6,6 +6,7 @@ namespace Onliner\CommandBus\Tests\Remote\AMQP;
 
 use InvalidArgumentException;
 use Onliner\CommandBus\Remote\AMQP\Connector;
+use Onliner\CommandBus\Remote\AMQP\Headers;
 use Onliner\CommandBus\Remote\AMQP\Packager;
 use Onliner\CommandBus\Remote\AMQP\SimpleRouter;
 use Onliner\CommandBus\Remote\AMQP\Transport;
@@ -44,28 +45,25 @@ class TransportTest extends TestCase
             'foo' => 'bar',
         ]);
 
-        $headers = $envelope->headers + [
-            'x-message-type' => $envelope->class,
-        ];
+        $headers = new AMQPTable($envelope->headers);
+        $headers->set(Headers::MESSAGE_TYPE, $envelope->class);
 
         $message = new AMQPMessage($envelope->payload, [
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+            'application_headers' => $headers,
         ]);
-        $message->set('application_headers', new AMQPTable($headers));
 
         $channel = self::createMock(AMQPChannel::class);
         $channel
             ->expects(self::exactly(2))
             ->method('basic_publish')
-            ->with($message, 'foo', strtolower(str_replace('\\', '.', $envelope->class)), false, false)
-        ;
+            ->with($message, 'foo', strtolower(str_replace('\\', '.', $envelope->class)), false, false);
 
         $connector = self::createMock(Connector::class);
         $connector
             ->expects(self::exactly(2))
             ->method('connect')
-            ->willReturn($channel)
-        ;
+            ->willReturn($channel);
 
         $transport = new Transport($connector, new Packager(), new SimpleRouter('foo'));
         $transport->send($envelope);

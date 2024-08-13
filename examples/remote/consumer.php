@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Onliner\CommandBus\Builder;
+use Onliner\CommandBus\Remote\AMQP\Exchange;
 use Onliner\CommandBus\Remote\AMQP\Transport;
 use Onliner\CommandBus\Remote\AMQP\Consumer;
 use Onliner\CommandBus\Remote\AMQP\Queue;
@@ -16,6 +17,8 @@ $builder->handle(SendEmail::class, function (SendEmail $command) {
 });
 
 $transport = Transport::create('amqp://guest:guest@localhost:5672');
+$transport->declare(Exchange::create(['name' => 'foo']));
+
 $consumer = $transport->consume();
 
 $pattern  = $argv[1] ?? '#';

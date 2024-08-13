@@ -39,7 +39,7 @@ final class Exchange
             throw new InvalidArgumentException('Exchange type must be a string');
         }
 
-        $name = $options['exchange'] ?? sprintf('amqp.%s', $type);
+        $name = $options['name'] ?? sprintf('amqp.%s', $type);
         $args = $options['args'] ?? [];
 
         if (!is_string($name)) {
