@@ -9,5 +9,6 @@ final class Route
     public function __construct(
         public string $exchange,
         public string $name,
+        public bool $mandatory = false,
     ) {}
 }

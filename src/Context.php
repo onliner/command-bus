@@ -8,8 +8,6 @@ use Onliner\CommandBus\Message\DeferredIterator;
 
 final class Context
 {
-    private const OPTION_LOCAL = 'local';
-
     /**
      * @param array<string, mixed> $options
      */
@@ -25,16 +23,6 @@ final class Context
     public function dispatch(object $message, array $options = []): void
     {
         $this->dispatcher->dispatch($message, $options);
-    }
-
-    /**
-     * @param array<string, mixed> $options
-     */
-    public function execute(object $message, array $options = []): void
-    {
-        $this->dispatcher->dispatch($message, array_replace($options, [
-            self::OPTION_LOCAL => true,
-        ]));
     }
 
     /**
@@ -77,10 +65,5 @@ final class Context
         unset($this->options[$option]);
 
         return $this;
-    }
-
-    public function isLocal(): bool
-    {
-        return $this->has(self::OPTION_LOCAL);
     }
 }

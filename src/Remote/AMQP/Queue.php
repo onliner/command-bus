@@ -18,12 +18,14 @@ final class Queue
     ;
 
     /**
+     * @param array<string> $bindings
      * @param array<string, string> $args
      */
     public function __construct(
         public string $name,
         public string $pattern,
-        public AMQPFlags $flags,
+        private array $bindings,
+        public Flags $flags,
         public array $args = [],
     ) {}
 
@@ -34,7 +36,12 @@ final class Queue
     {
         $pattern = $options['pattern'] ?? '#';
         $name = $options['queue'] ?? $pattern;
+        $bindings = $options['bindings'] ?? [];
         $args = $options['args'] ?? [];
+
+        if (is_string($bindings)) {
+            $bindings = [$bindings];
+        }
 
         if (!is_string($name)) {
             throw new InvalidArgumentException('Queue name must be a string');
@@ -44,11 +51,15 @@ final class Queue
             throw new InvalidArgumentException('Queue pattern must be a string or null');
         }
 
+        if (!is_array($bindings)) {
+            throw new InvalidArgumentException('Queue binding must be an array');
+        }
+
         if (!is_array($args)) {
             throw new InvalidArgumentException('Queue arguments must be an array');
         }
 
-        return new self($name, $pattern, AMQPFlags::compute($options), $args);
+        return new self($name, $pattern, $bindings, Flags::compute($options), $args);
     }
 
     public function is(int $flag): bool
@@ -56,27 +67,29 @@ final class Queue
         return $this->flags->is($flag);
     }
 
-    public function consume(AMQPChannel $channel, Exchange $exchange, callable $handler): void
+    public function consume(AMQPChannel $channel, callable $handler): void
     {
         $channel->queue_declare(
             $this->name,
-            $this->is(AMQPFlags::PASSIVE),
-            $this->is(AMQPFlags::DURABLE),
-            $this->is(AMQPFlags::EXCLUSIVE),
-            $this->is(AMQPFlags::DELETE),
-            $this->is(AMQPFlags::NO_WAIT),
+            $this->is(Flags::PASSIVE),
+            $this->is(Flags::DURABLE),
+            $this->is(Flags::EXCLUSIVE),
+            $this->is(Flags::DELETE),
+            $this->is(Flags::NO_WAIT),
             new AMQPTable($this->args)
         );
 
-        $channel->queue_bind($this->name, $exchange->name, $this->pattern);
+        foreach ($this->bindings as $binding) {
+            $channel->queue_bind($this->name, $binding, $this->pattern);
+        }
 
         $channel->basic_consume(
             $this->name,
             '',
-            $this->is(AMQPFlags::NO_LOCAL),
-            $this->is(AMQPFlags::NO_ACK),
-            $this->is(AMQPFlags::EXCLUSIVE),
-            $this->is(AMQPFlags::NO_WAIT),
+            $this->is(Flags::NO_LOCAL),
+            $this->is(Flags::NO_ACK),
+            $this->is(Flags::EXCLUSIVE),
+            $this->is(Flags::NO_WAIT),
             $handler
         );
     }

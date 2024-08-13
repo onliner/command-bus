@@ -10,20 +10,23 @@ final class SimpleRouter implements Router
 {
     /**
      * @param array<string, string> $routes
+     * @param array<string> $mandatory
      */
     public function __construct(
+        private string $exchange = '',
         private array $routes = [],
+        private array $mandatory = [],
     ) {}
 
-    public function match(Envelope $envelope, Exchange $exchange): Route
+    public function match(Envelope $envelope): Route
     {
-        $target = $this->exchange($envelope->class, $exchange->name);
+        $target = $this->exchange($envelope->class);
         $name = strtolower(str_replace('\\', '.', $envelope->class));
 
-        return new Route($target, $name);
+        return new Route($target, $name, in_array($envelope->class, $this->mandatory));
     }
 
-    private function exchange(string $type, string $default): string
+    private function exchange(string $type): string
     {
         foreach ($this->routes as $pattern => $exchange) {
             if (!fnmatch($pattern, $type, FNM_NOESCAPE)) {
@@ -33,6 +36,6 @@ final class SimpleRouter implements Router
             return $exchange;
         }
 
-        return $default;
+        return $this->exchange;
     }
 }

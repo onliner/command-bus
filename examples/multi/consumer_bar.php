@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Onliner\CommandBus\Builder;
-use Onliner\CommandBus\Remote\AMQP\AMQPTransport;
-use Onliner\CommandBus\Remote\AMQP\AMQPConsumer;
+use Onliner\CommandBus\Remote\AMQP\Transport;
+use Onliner\CommandBus\Remote\AMQP\Consumer;
 
 /** @var Builder $builder */
 $builder = require __DIR__ . '/builder.php';
@@ -14,11 +14,11 @@ $builder->handle(Bar\Hello::class, function (Bar\Hello $command) {
 
 $dispatcher = $builder->build();
 
-$transport = AMQPTransport::create('amqp://guest:guest@localhost:5673', [
+$transport = Transport::create('amqp://guest:guest@localhost:5673', [
     'exchange' => 'bar',
 ]);
 
-/** @var AMQPConsumer $consumer */
+/** @var Consumer $consumer */
 $consumer = $transport->consume();
 $consumer->listen('#');
 $consumer->run($dispatcher);

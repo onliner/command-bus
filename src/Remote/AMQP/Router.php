@@ -8,5 +8,5 @@ use Onliner\CommandBus\Remote\Envelope;
 
 interface Router
 {
-    public function match(Envelope $envelope, Exchange $exchange): Route;
+    public function match(Envelope $envelope): Route;
 }

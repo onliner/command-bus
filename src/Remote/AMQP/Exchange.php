@@ -18,22 +18,13 @@ final class Exchange
         TYPE_DELAYED = 'x-delayed-message'
     ;
 
-    public const
-        HEADER_EXCHANGE = 'exchange',
-        HEADER_REDELIVERED = 'redelivered',
-        HEADER_ROUTING_KEY = 'routing_key',
-        HEADER_CONSUMER_TAG = 'consumer_tag',
-        HEADER_DELIVERY_TAG = 'delivery_tag',
-        HEADER_MESSAGE_TYPE = 'x-message-type'
-    ;
-
     /**
      * @param array<string, string> $args
      */
     public function __construct(
         public string $name,
         public string $type,
-        public AMQPFlags $flags,
+        public Flags $flags,
         public array $args = [],
     ) {}
 
@@ -63,7 +54,7 @@ final class Exchange
             $args['x-delayed-type'] = self::TYPE_TOPIC;
         }
 
-        return new self($name, $type, AMQPFlags::compute($options), $args);
+        return new self($name, $type, Flags::compute($options), $args);
     }
 
     public function is(int $flag): bool
@@ -76,11 +67,11 @@ final class Exchange
         $channel->exchange_declare(
             $this->name,
             $this->type,
-            $this->flags->is(AMQPFlags::PASSIVE),
-            $this->flags->is(AMQPFlags::DURABLE),
-            $this->flags->is(AMQPFlags::DELETE),
-            $this->flags->is(AMQPFlags::INTERNAL),
-            $this->flags->is(AMQPFlags::NO_WAIT),
+            $this->flags->is(Flags::PASSIVE),
+            $this->flags->is(Flags::DURABLE),
+            $this->flags->is(Flags::DELETE),
+            $this->flags->is(Flags::INTERNAL),
+            $this->flags->is(Flags::NO_WAIT),
             new AMQPTable($this->args)
         );
     }

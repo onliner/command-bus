@@ -8,6 +8,7 @@ class Headers
 {
     public const
         DELAY = 'x-delay',
-        PRIORITY = 'x-priority'
+        PRIORITY = 'x-priority',
+        MESSAGE_TYPE = 'x-message-type'
     ;
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
-class AMQPFlags
+class Flags
 {
     public const
         PASSIVE = 1,
