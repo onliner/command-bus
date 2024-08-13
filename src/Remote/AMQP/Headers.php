@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
-class Headers
+final class Headers
 {
     public const
         DELAY = 'x-delay',

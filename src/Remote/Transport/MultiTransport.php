@@ -8,7 +8,7 @@ use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
 
-class MultiTransport implements Transport
+final class MultiTransport implements Transport
 {
     /**
      * @var array<string, Transport>

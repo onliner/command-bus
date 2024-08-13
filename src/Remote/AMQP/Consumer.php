@@ -38,7 +38,7 @@ final class Consumer implements ConsumerContract
     public function __construct(
         private Connector $connector,
         private Packager $packager,
-        LoggerInterface $logger = null,
+        ?LoggerInterface $logger = null,
     ) {
         $this->logger = $logger ?? new NullLogger();
     }
@@ -46,9 +46,9 @@ final class Consumer implements ConsumerContract
     /**
      * @param string|array<string> $bindings
      */
-    public function listen(string $name, array|string $bindings = [], Flags $flags = null): void
+    public function listen(string $name, array|string $bindings = [], ?Flags $flags = null): void
     {
-        $this->consume(new Queue($name, $name, (array) $bindings, $flags ?? Flags::default()));
+        $this->consume(new Queue($name, (array) $bindings, $flags ?? Flags::default()));
     }
 
     public function consume(Queue $queue): void
@@ -95,10 +95,12 @@ final class Consumer implements ConsumerContract
         $handler = function (AMQPMessage $message) use ($channel, $dispatcher) {
             try {
                 $this->handle($message, $channel, $dispatcher);
+
+                $message->ack();
             } catch (Throwable $error) {
                 $this->logger->error((string) $error);
-            } finally {
-                $message->ack();
+
+                $message->nack();
             }
         };
 
@@ -155,8 +157,6 @@ final class Consumer implements ConsumerContract
             return;
         }
 
-        $envelope = $this->packager->unpack($message);
-
-        $dispatcher->dispatch($envelope);
+        $dispatcher->dispatch($this->packager->unpack($message));
     }
 }

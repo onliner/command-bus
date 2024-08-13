@@ -8,12 +8,9 @@ require __DIR__ . '/../vendor/autoload.php';
 
 class Hello
 {
-    public $message;
-
-    public function __construct(string $message)
-    {
-        $this->message = $message;
-    }
+    public function __construct(
+        public string $message,
+    ) {}
 }
 
 $dispatcher = (new Builder())

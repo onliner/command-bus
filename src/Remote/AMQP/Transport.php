@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
+use Onliner\CommandBus\Builder;
+use Onliner\CommandBus\Context;
+use Onliner\CommandBus\Extension;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport as TransportContract;
 use Psr\Log\LoggerInterface;
 
-final class Transport implements TransportContract
+final class Transport implements TransportContract, Extension
 {
     public function __construct(
         private Connector $connector,
@@ -29,8 +32,12 @@ final class Transport implements TransportContract
 
     public function send(Envelope $envelope): void
     {
+        $this->publish($envelope, $this->router->match($envelope));
+    }
+
+    public function publish(Envelope $envelope, Route $route): void
+    {
         $message = $this->packager->pack($envelope);
-        $route = $this->router->match($envelope);
 
         $channel = $this->connector->connect();
         $channel->basic_publish(
@@ -46,15 +53,18 @@ final class Transport implements TransportContract
         return new Consumer($this->connector, $this->packager, $this->logger);
     }
 
-    /**
-     * @param Exchange|array<string, mixed> $exchange
-     */
-    public function declare(Exchange|array $exchange): void
+    public function declare(Exchange $exchange): void
     {
-        if (is_array($exchange)) {
-            $exchange = Exchange::create($exchange);
-        }
-
         $exchange->declare($this->connector->connect());
+    }
+
+    public function setup(Builder $builder): void
+    {
+        $builder->handle(Publish::class, function (Publish $message, Context $context) {
+            $this->publish(
+                new Envelope(Publish::class, $message->payload, $context->all()),
+                new Route($message->exchange, $message->route),
+            );
+        });
     }
 }

@@ -16,7 +16,7 @@ final class RetryExtension implements Extension
      */
     private array $policies = [];
 
-    public function __construct(Policy $default = null)
+    public function __construct(?Policy $default = null)
     {
         $this->default = $default ?? new Policy\ThrowPolicy();
     }

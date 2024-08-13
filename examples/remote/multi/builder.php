@@ -7,7 +7,7 @@ use Onliner\CommandBus\Remote\AMQP\Transport;
 use Onliner\CommandBus\Remote\RemoteExtension;
 use Onliner\CommandBus\Remote\Transport\MultiTransport;
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__ . '/../../../vendor/autoload.php';
 require __DIR__ . '/messages.php';
 
 $transportFoo = Transport::create('amqp://guest:guest@localhost:5672', 'foo');

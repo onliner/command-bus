@@ -23,7 +23,6 @@ final class Queue
      */
     public function __construct(
         public string $name,
-        public string $pattern,
         private array $bindings,
         public Flags $flags,
         public array $args = [],
@@ -35,7 +34,7 @@ final class Queue
     public static function create(array $options): self
     {
         $pattern = $options['pattern'] ?? '#';
-        $name = $options['queue'] ?? $pattern;
+        $name = $options['name'] ?? $pattern;
         $bindings = $options['bindings'] ?? [];
         $args = $options['args'] ?? [];
 
@@ -59,7 +58,11 @@ final class Queue
             throw new InvalidArgumentException('Queue arguments must be an array');
         }
 
-        return new self($name, $pattern, $bindings, Flags::compute($options), $args);
+        if (array_is_list($bindings)) {
+            $bindings = array_fill_keys($bindings, $pattern);
+        }
+
+        return new self($name, $bindings, Flags::compute($options), $args);
     }
 
     public function is(int $flag): bool
@@ -76,11 +79,11 @@ final class Queue
             $this->is(Flags::EXCLUSIVE),
             $this->is(Flags::DELETE),
             $this->is(Flags::NO_WAIT),
-            new AMQPTable($this->args)
+            new AMQPTable($this->args),
         );
 
-        foreach ($this->bindings as $binding) {
-            $channel->queue_bind($this->name, $binding, $this->pattern);
+        foreach ($this->bindings as $exchange => $pattern) {
+            $channel->queue_bind($this->name, $exchange, $pattern);
         }
 
         $channel->basic_consume(

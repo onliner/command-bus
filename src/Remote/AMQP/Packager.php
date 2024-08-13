@@ -10,7 +10,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPAbstractCollection;
 use PhpAmqpLib\Wire\AMQPTable;
 
-class Packager
+final class Packager
 {
     /**
      * @deprecated

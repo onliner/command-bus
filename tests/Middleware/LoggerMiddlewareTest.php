@@ -36,7 +36,10 @@ class LoggerMiddlewareTest extends TestCase
         $logger
             ->expects(self::once())
             ->method('log')
-            ->with($level, 'expected', []);
+            ->with($level, 'expected', [
+                'file' => __FILE__,
+                'line' => 46,
+            ]);
 
         $dispatcher = (new Builder())
             ->handle(Command\Hello::class, function () {

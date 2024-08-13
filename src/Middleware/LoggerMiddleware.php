@@ -22,7 +22,10 @@ final class LoggerMiddleware implements Middleware
         try {
             $next($message, $context);
         } catch (Throwable $error) {
-            $this->logger->log($this->level, $error->getMessage());
+            $this->logger->log($this->level, $error->getMessage(), [
+                'file' => $error->getFile(),
+                'line' => $error->getLine(),
+            ]);
 
             throw $error;
         }

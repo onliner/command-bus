@@ -15,7 +15,7 @@ class Connector
     private ?PCNTLHeartbeatSender $heartbeats = null;
 
     /**
-     * @param array<array<mixed>>      $hosts
+     * @param array<array<mixed>> $hosts
      * @param array<string|int, mixed> $options
      */
     public function __construct(

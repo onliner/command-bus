@@ -19,7 +19,7 @@ final class RemoteExtension implements Extension
         Envelope::class,
     ];
 
-    public function __construct(Transport $transport = null, Serializer $serializer = null)
+    public function __construct(?Transport $transport = null, ?Serializer $serializer = null)
     {
         $this->transport = $transport ?? new Transport\MemoryTransport();
         $this->serializer = $serializer ?? new Serializer\NativeSerializer();
@@ -32,6 +32,10 @@ final class RemoteExtension implements Extension
 
     public function setup(Builder $builder): void
     {
+        if ($this->transport instanceof Extension) {
+            $this->transport->setup($builder);
+        }
+
         $gateway = new Gateway($this->transport, $this->serializer);
 
         $builder->middleware(new RemoteMiddleware($gateway, $this->local));
