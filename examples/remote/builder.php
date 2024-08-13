@@ -9,10 +9,7 @@ use Onliner\CommandBus\Remote\RemoteExtension;
 require __DIR__ . '/../../vendor/autoload.php';
 require __DIR__ . '/messages.php';
 
-$transport = Transport::create('amqp://guest:guest@localhost:5672', [
-    'exchange' => 'foo',
-]);
+$transport = Transport::create('amqp://guest:guest@localhost:5672', 'foo');
 
 return (new Builder())
-    ->use(new RemoteExtension($transport))
-;
+    ->use(new RemoteExtension($transport));

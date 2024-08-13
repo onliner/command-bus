@@ -12,13 +12,7 @@ $builder->handle(Bar\Hello::class, function (Bar\Hello $command) {
     echo sprintf('Hello %s from bar!', $command->name), PHP_EOL;
 });
 
-$dispatcher = $builder->build();
-
-$transport = Transport::create('amqp://guest:guest@localhost:5673', [
-    'exchange' => 'bar',
-]);
-
-/** @var Consumer $consumer */
+$transport = Transport::create('amqp://guest:guest@localhost:5673');
 $consumer = $transport->consume();
-$consumer->listen('#');
-$consumer->run($dispatcher);
+$consumer->listen('#', 'bar');
+$consumer->run($builder->build());

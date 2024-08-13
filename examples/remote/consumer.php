@@ -15,30 +15,25 @@ $builder->handle(SendEmail::class, function (SendEmail $command) {
     echo 'CONTENT: ', $command->content, \PHP_EOL;
 });
 
-$dispatcher = $builder->build();
-
-$transport = Transport::create('amqp://guest:guest@localhost:5672', [
-    'exchange' => 'foo',
-]);
-
-/** @var Consumer $consumer */
+$transport = Transport::create('amqp://guest:guest@localhost:5672');
 $consumer = $transport->consume();
 
 $pattern  = $argv[1] ?? '#';
 $priority = isset($argv[2]) ? (int) $argv[2] : 0;
 
 if ($priority === 0) {
-    $consumer->listen($pattern);
+    $consumer->listen($pattern, 'foo');
 } else {
     $consumer->consume(Queue::create([
         'pattern' => $pattern,
+        'bindings' => ['foo'],
         'args' => [
             Queue::MAX_PRIORITY => $priority,
         ],
     ]));
 }
 
-$consumer->run($dispatcher, [
+$consumer->run($builder->build(), [
     Consumer::OPTION_ATTEMPTS => 10,
     Consumer::OPTION_INTERVAL => 100000, // 100 ms
 ]);

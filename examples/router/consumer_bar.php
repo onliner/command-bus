@@ -13,12 +13,9 @@ $builder->handle(Bar\Hello::class, function (Bar\Hello $command) {
 });
 
 $dispatcher = $builder->build();
-
-$transport = Transport::create('amqp://guest:guest@localhost:5672', [
-    'exchange' => 'bar',
-]);
+$transport = Transport::create('amqp://guest:guest@localhost:5672');
 
 /** @var Consumer $consumer */
 $consumer = $transport->consume();
-$consumer->listen('#');
+$consumer->listen('#', 'bar');
 $consumer->run($dispatcher);

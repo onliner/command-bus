@@ -57,7 +57,7 @@ class TransportTest extends TestCase
         $channel
             ->expects(self::exactly(2))
             ->method('basic_publish')
-            ->with($message, 'amqp.topic', strtolower(str_replace('\\', '.', $envelope->class)), false, false)
+            ->with($message, 'foo', strtolower(str_replace('\\', '.', $envelope->class)), false, false)
         ;
 
         $connector = self::createMock(Connector::class);
@@ -67,7 +67,7 @@ class TransportTest extends TestCase
             ->willReturn($channel)
         ;
 
-        $transport = new Transport($connector, new Packager(), new SimpleRouter());
+        $transport = new Transport($connector, new Packager(), new SimpleRouter('foo'));
         $transport->send($envelope);
         $transport->send($envelope);
     }

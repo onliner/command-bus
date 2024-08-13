@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Onliner\CommandBus\Remote;
 
 use Onliner\CommandBus\Context;
+use Onliner\CommandBus\Remote\AMQP\Packager;
 
 final class Gateway
 {
@@ -24,6 +25,8 @@ final class Gateway
     {
         $message = $this->serializer->unserialize($envelope);
 
-        $context->execute($message, $envelope->headers);
+        $context->dispatch($message, array_replace($envelope->headers, [
+            Packager::OPTION_LOCAL => true,
+        ]));
     }
 }

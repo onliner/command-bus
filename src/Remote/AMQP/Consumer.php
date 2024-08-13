@@ -92,9 +92,9 @@ final class Consumer implements ConsumerContract
     private function channel(Dispatcher $dispatcher, array $options): AMQPChannel
     {
         $channel = $this->connect($options);
-        $handler = function (AMQPMessage $message) use ($dispatcher) {
+        $handler = function (AMQPMessage $message) use ($channel, $dispatcher) {
             try {
-                $this->handle($message, $dispatcher);
+                $this->handle($message, $channel, $dispatcher);
             } catch (Throwable $error) {
                 $this->logger->error((string) $error);
             } finally {
@@ -143,10 +143,16 @@ final class Consumer implements ConsumerContract
         throw new AMQPIOException();
     }
 
-    private function handle(AMQPMessage $message, Dispatcher $dispatcher): void
+    private function handle(AMQPMessage $message, AMQPChannel $channel, Dispatcher $dispatcher): void
     {
         if ($message->isRedelivered()) {
-            throw new AMQPIOException('Message redelivered');
+            $channel->basic_publish(
+                new AMQPMessage($message->body, $message->get_properties()),
+                (string) $message->getExchange(),
+                (string) $message->getRoutingKey(),
+            );
+
+            return;
         }
 
         $envelope = $this->packager->unpack($message);
