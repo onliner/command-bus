@@ -9,7 +9,6 @@ use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Exception;
 use Onliner\CommandBus\Extension;
 use Onliner\CommandBus\Middleware;
-use Onliner\CommandBus\Tests\Command;
 use PHPUnit\Framework\TestCase;
 
 class BuilderTest extends TestCase
@@ -36,7 +35,7 @@ class BuilderTest extends TestCase
 
     public function testBuildWithMiddleware(): void
     {
-        $middleware = new class implements Middleware {
+        $middleware = new class() implements Middleware {
             /** @var bool */
             public $executed = false;
 

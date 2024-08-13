@@ -8,7 +8,6 @@ use Onliner\CommandBus\Builder;
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Message\Deferred;
 use Onliner\CommandBus\Message\DeferredIterator;
-use Onliner\CommandBus\Tests\Command;
 use PHPUnit\Framework\TestCase;
 
 class ContextTest extends TestCase

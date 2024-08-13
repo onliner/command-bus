@@ -10,16 +10,13 @@ use Onliner\CommandBus\Middleware;
 final class RemoteMiddleware implements Middleware
 {
     /**
-     * @param Gateway       $gateway
      * @param array<string> $local
      */
-    public function __construct(private Gateway $gateway, private array $local = [])
-    {
-    }
+    public function __construct(
+        private Gateway $gateway,
+        private array $local = [],
+    ) {}
 
-    /**
-     * {@inheritDoc}
-     */
     public function call(object $message, Context $context, callable $next): void
     {
         if ($this->isLocal(get_class($message), $context)) {
@@ -29,12 +26,6 @@ final class RemoteMiddleware implements Middleware
         }
     }
 
-    /**
-     * @param string  $class
-     * @param Context $context
-     *
-     * @return bool
-     */
     private function isLocal(string $class, Context $context): bool
     {
         return $context->isLocal() || in_array($class, $this->local);

@@ -10,17 +10,11 @@ use Onliner\CommandBus\Remote\Serializer;
 
 final class NativeSerializer implements Serializer
 {
-    /**
-     * {@inheritDoc}
-     */
     public function serialize(object $command, array $headers = []): Envelope
     {
         return new Envelope(get_class($command), serialize($command), $headers);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function unserialize(Envelope $envelope): object
     {
         $message = unserialize($envelope->payload);

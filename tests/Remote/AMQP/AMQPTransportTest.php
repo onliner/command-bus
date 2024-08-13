@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use Onliner\CommandBus\Remote\AMQP\AMQPTransport;
 use Onliner\CommandBus\Remote\AMQP\Connector;
 use Onliner\CommandBus\Remote\AMQP\Exchange;
-use Onliner\CommandBus\Remote\AMQP\Router\SimpleRouter;
+use Onliner\CommandBus\Remote\AMQP\SimpleRouter;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Tests\Command\Hello;
 use PhpAmqpLib\Channel\AMQPChannel;

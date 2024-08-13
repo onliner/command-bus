@@ -16,25 +16,15 @@ final class ContainerResolver implements Resolver
      */
     private array $handlers = [];
 
-    /**
-     * @param ContainerInterface $container
-     */
-    public function __construct(private ContainerInterface $container)
-    {
-    }
+    public function __construct(
+        private ContainerInterface $container,
+    ) {}
 
-    /**
-     * @param string $class
-     * @param string $handler
-     */
     public function register(string $class, string $handler): void
     {
         $this->handlers[$class] = $handler;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function resolve(object $command): callable
     {
         return function (object $command, Context $context) {

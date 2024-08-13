@@ -8,6 +8,8 @@ use Onliner\CommandBus\Builder;
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Exception;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use Throwable;
 
 class DispatcherTest extends TestCase
 {
@@ -59,12 +61,12 @@ class DispatcherTest extends TestCase
 
                     $context->defer(new Command\Hello('bar'));
 
-                    throw new \RuntimeException('Failed');
+                    throw new RuntimeException('Failed');
                 })
                 ->build();
 
             $dispatcher->dispatch(new Command\Hello('foo'));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             //do nothing
         }
 

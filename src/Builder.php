@@ -24,12 +24,6 @@ final class Builder
      */
     private array $extensions = [];
 
-    /**
-     * @param string   $command
-     * @param callable $handler
-     *
-     * @return self
-     */
     public function handle(string $command, callable $handler): self
     {
         $this->handlers[$command] = $handler;
@@ -37,11 +31,6 @@ final class Builder
         return $this;
     }
 
-    /**
-     * @param Middleware $middleware
-     *
-     * @return self
-     */
     public function middleware(Middleware $middleware): self
     {
         $this->middleware[get_class($middleware)] = $middleware;
@@ -49,11 +38,6 @@ final class Builder
         return $this;
     }
 
-    /**
-     * @param Extension $extension
-     *
-     * @return self
-     */
     public function use(Extension $extension): self
     {
         $this->extensions[get_class($extension)] = $extension;
@@ -61,9 +45,6 @@ final class Builder
         return $this;
     }
 
-    /**
-     * @return Dispatcher
-     */
     public function build(): Dispatcher
     {
         foreach ($this->extensions as $extension) {

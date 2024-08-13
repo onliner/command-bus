@@ -12,19 +12,11 @@ use Throwable;
 
 final class LoggerMiddleware implements Middleware
 {
-    /**
-     * @param LoggerInterface $logger
-     * @param string          $level
-     */
-    public function __construct(private LoggerInterface $logger, private string $level = LogLevel::ERROR)
-    {
-    }
+    public function __construct(
+        private LoggerInterface $logger,
+        private string $level = LogLevel::ERROR,
+    ) {}
 
-    /**
-     * {@inheritDoc}
-     *
-     * @throws Throwable
-     */
     public function call(object $message, Context $context, callable $next): void
     {
         try {

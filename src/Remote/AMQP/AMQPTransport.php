@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
-use Onliner\CommandBus\Remote\AMQP\Router\SimpleRouter;
 use Onliner\CommandBus\Remote\Consumer;
 use Onliner\CommandBus\Remote\Envelope;
 use Onliner\CommandBus\Remote\Transport;
@@ -18,25 +17,15 @@ final class AMQPTransport implements Transport
         'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
     ];
 
-    /**
-     * @param Connector            $connector
-     * @param Exchange             $exchange
-     * @param Router               $router
-     * @param LoggerInterface|null $logger
-     */
     public function __construct(
         private Connector $connector,
         private Exchange $exchange,
         private Router $router,
-        private ?LoggerInterface $logger = null
-    ) {
-    }
+        private ?LoggerInterface $logger = null,
+    ) {}
 
     /**
-     * @param string               $dsn
      * @param array<string, mixed> $options
-     *
-     * @return self
      */
     public static function create(string $dsn, array $options = []): self
     {
@@ -49,9 +38,6 @@ final class AMQPTransport implements Transport
         return new self(Connector::create($dsn), Exchange::create($options), $router);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function send(Envelope $envelope): void
     {
         $headers = $envelope->headers + [
@@ -67,14 +53,11 @@ final class AMQPTransport implements Transport
         $channel = $this->connector->connect();
         $channel->basic_publish(
             $message,
-            $route->exchange(),
-            $route->name(),
+            $route->exchange,
+            $route->name,
         );
     }
 
-    /**
-     * @return Consumer
-     */
     public function consume(): Consumer
     {
         return new AMQPConsumer($this->connector, $this->exchange, $this->logger);

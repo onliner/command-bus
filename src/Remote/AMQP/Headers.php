@@ -6,6 +6,8 @@ namespace Onliner\CommandBus\Remote\AMQP;
 
 class Headers
 {
-    public const DELAY = 'x-delay';
-    public const PRIORITY = 'x-priority';
+    public const
+        DELAY = 'x-delay',
+        PRIORITY = 'x-priority'
+    ;
 }

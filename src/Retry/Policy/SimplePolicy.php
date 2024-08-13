@@ -12,20 +12,14 @@ final class SimplePolicy implements Policy
 {
     private const OPTION_ATTEMPT = 'attempt';
 
-    /**
-     * @param int $retries
-     * @param int $delay
-     */
-    public function __construct(private int $retries, private int $delay = 0)
-    {
-    }
+    public function __construct(
+        private int $retries,
+        private int $delay = 0,
+    ) {}
 
-    /**
-     * {@inheritDoc}
-     */
     public function retry(object $message, Context $context, Throwable $error): void
     {
-        $attempt = $context->get(self::OPTION_ATTEMPT,  1);
+        $attempt = $context->get(self::OPTION_ATTEMPT, 1);
 
         if ($attempt > $this->retries) {
             throw $error;

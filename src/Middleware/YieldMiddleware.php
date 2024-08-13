@@ -12,9 +12,6 @@ use Throwable;
 
 final class YieldMiddleware implements Middleware
 {
-    /**
-     * {@inheritDoc}
-     */
     public function call(object $message, Context $context, callable $next): void
     {
         $result = $next($message, $context);
@@ -30,7 +27,6 @@ final class YieldMiddleware implements Middleware
 
     /**
      * @param Generator<object> $generator
-     * @param Context           $context
      */
     private function tick(Generator $generator, Context $context): void
     {

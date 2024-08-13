@@ -37,40 +37,24 @@ final class AMQPConsumer implements Consumer
      */
     private array $queues = [];
 
-    /**
-     * @param Connector            $connector
-     * @param Exchange             $exchange
-     * @param LoggerInterface|null $logger
-     */
     public function __construct(
         private Connector $connector,
         private Exchange $exchange,
-        LoggerInterface $logger = null
+        LoggerInterface $logger = null,
     ) {
         $this->logger = $logger ?? new NullLogger();
     }
 
-    /**
-     * @param string $pattern
-     *
-     * @return void
-     */
     public function listen(string $pattern): void
     {
-        $this->consume(new Queue($pattern, $pattern, $this->exchange->flags()));
+        $this->consume(new Queue($pattern, $pattern, $this->exchange->flags));
     }
 
-    /**
-     * @param Queue $queue
-     */
     public function consume(Queue $queue): void
     {
         $this->queues[] = $queue;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function run(Dispatcher $dispatcher, array $options = []): void
     {
         $this->running = true;
@@ -96,20 +80,13 @@ final class AMQPConsumer implements Consumer
         $channel->close();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function stop(): void
     {
         $this->running = false;
     }
 
     /**
-     * @param Dispatcher           $dispatcher
      * @param array<string, mixed> $options
-     *
-     * @return AMQPChannel
-     * @throws AMQPIOException
      */
     private function channel(Dispatcher $dispatcher, array $options): AMQPChannel
     {
@@ -135,9 +112,6 @@ final class AMQPConsumer implements Consumer
 
     /**
      * @param array<string, mixed> $options
-     *
-     * @return AMQPChannel
-     * @throws AMQPIOException
      */
     private function connect(array $options): AMQPChannel
     {
@@ -170,12 +144,6 @@ final class AMQPConsumer implements Consumer
         throw new AMQPIOException();
     }
 
-    /**
-     * @param AMQPMessage $message
-     * @param Dispatcher  $dispatcher
-     *
-     * @return void
-     */
     private function handle(AMQPMessage $message, Dispatcher $dispatcher): void
     {
         $headers = $message->get('application_headers');
@@ -187,11 +155,11 @@ final class AMQPConsumer implements Consumer
         }
 
         $headers = array_replace($headers->getNativeData(), [
-            Exchange::HEADER_EXCHANGE     => $message->getExchange(),
-            Exchange::HEADER_ROUTING_KEY  => $message->getRoutingKey(),
+            Exchange::HEADER_EXCHANGE => $message->getExchange(),
+            Exchange::HEADER_REDELIVERED => $message->isRedelivered(),
+            Exchange::HEADER_ROUTING_KEY => $message->getRoutingKey(),
             Exchange::HEADER_CONSUMER_TAG => $message->getConsumerTag(),
             Exchange::HEADER_DELIVERY_TAG => $message->getDeliveryTag(),
-            Exchange::HEADER_REDELIVERED  => $message->isRedelivered(),
         ]);
 
         if (!isset($headers[Exchange::HEADER_MESSAGE_TYPE])) {

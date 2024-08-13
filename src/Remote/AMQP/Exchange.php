@@ -11,47 +11,38 @@ use PhpAmqpLib\Wire\AMQPTable;
 final class Exchange
 {
     public const
-        TYPE_TOPIC   = 'topic',
-        TYPE_FANOUT  = 'fanout',
-        TYPE_DIRECT  = 'direct',
+        TYPE_TOPIC = 'topic',
+        TYPE_FANOUT = 'fanout',
+        TYPE_DIRECT = 'direct',
         TYPE_HEADERS = 'headers',
         TYPE_DELAYED = 'x-delayed-message'
     ;
 
     public const
-        HEADER_EXCHANGE     = 'exchange',
-        HEADER_ROUTING_KEY  = 'routing_key',
+        HEADER_EXCHANGE = 'exchange',
+        HEADER_REDELIVERED = 'redelivered',
+        HEADER_ROUTING_KEY = 'routing_key',
         HEADER_CONSUMER_TAG = 'consumer_tag',
         HEADER_DELIVERY_TAG = 'delivery_tag',
-        HEADER_REDELIVERED  = 'redelivered',
         HEADER_MESSAGE_TYPE = 'x-message-type'
     ;
 
-    private AMQPFlags $flags;
-
     /**
-     * @param string                 $name
-     * @param string                 $type
-     * @param AMQPFlags|null         $flags
-     * @param array<string, string>  $args
+     * @param array<string, string> $args
      */
     public function __construct(
-        private string $name,
-        private string $type = self::TYPE_TOPIC,
-        AMQPFlags $flags = null,
-        private array $args = []
-    ) {
-        $this->flags = $flags ?? AMQPFlags::default();
-    }
+        public string $name,
+        public string $type,
+        public AMQPFlags $flags,
+        public array $args = [],
+    ) {}
 
     /**
      * @param array<string, mixed> $options
-     *
-     * @return self
      */
     public static function create(array $options): self
     {
-        $type  = $options['type'] ?? self::TYPE_TOPIC;
+        $type = $options['type'] ?? self::TYPE_TOPIC;
 
         if (!is_string($type)) {
             throw new InvalidArgumentException('Exchange type must be a string');
@@ -75,45 +66,11 @@ final class Exchange
         return new self($name, $type, AMQPFlags::compute($options), $args);
     }
 
-    /**
-     * @return string
-     */
-    public function name(): string
-    {
-        return $this->name;
-    }
-
-    /**
-     * @return string
-     */
-    public function type(): string
-    {
-        return $this->type;
-    }
-
-    /**
-     * @return AMQPFlags
-     */
-    public function flags(): AMQPFlags
-    {
-        return $this->flags;
-    }
-
-    /**
-     * @param int $flag
-     *
-     * @return bool
-     */
     public function is(int $flag): bool
     {
         return $this->flags->is($flag);
     }
 
-    /**
-     * @param AMQPChannel $channel
-     *
-     * @return void
-     */
     public function declare(AMQPChannel $channel): void
     {
         $channel->exchange_declare(

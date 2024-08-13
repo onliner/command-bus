@@ -10,7 +10,7 @@ use IteratorAggregate;
 /**
  * @implements IteratorAggregate<Deferred>
  */
-class DeferredIterator implements IteratorAggregate
+final class DeferredIterator implements IteratorAggregate
 {
     /**
      * @var array<Deferred>

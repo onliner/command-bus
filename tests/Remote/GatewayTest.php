@@ -19,7 +19,7 @@ class GatewayTest extends TestCase
 {
     public function testSend(): void
     {
-        $transport  = new Transport\MemoryTransport();
+        $transport = new Transport\MemoryTransport();
         $serializer = new Serializer\NativeSerializer();
 
         $command = new Hello('onliner');
