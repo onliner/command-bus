@@ -32,6 +32,10 @@ final class RemoteExtension implements Extension
 
     public function setup(Builder $builder): void
     {
+        if ($this->transport instanceof Extension) {
+            $this->transport->setup($builder);
+        }
+
         $gateway = new Gateway($this->transport, $this->serializer);
 
         $builder->middleware(new RemoteMiddleware($gateway, $this->local));
