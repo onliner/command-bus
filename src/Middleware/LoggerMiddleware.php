@@ -23,6 +23,7 @@ final class LoggerMiddleware implements Middleware
             $next($message, $context);
         } catch (Throwable $error) {
             $this->logger->log($this->level, $error->getMessage(), [
+                'type' => get_class($error),
                 'file' => $error->getFile(),
                 'line' => $error->getLine(),
             ]);

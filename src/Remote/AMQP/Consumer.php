@@ -17,9 +17,18 @@ use Throwable;
 final class Consumer implements ConsumerContract
 {
     public const
+        MODE_ACK = 'ack',
+        MODE_NACK = 'nack',
+        MODE_REJECT = 'reject'
+    ;
+
+    public const
         OPTION_ATTEMPTS = 'attempts',
         OPTION_INTERVAL = 'interval',
-        OPTION_PREFETCH = 'prefetch'
+        OPTION_PREFETCH = 'prefetch',
+        OPTION_REQUEUE = 'requeue',
+        OPTION_MULTIPLE = 'multiple',
+        OPTION_MODE = self::MODE_REJECT
     ;
 
     private const
@@ -74,7 +83,11 @@ final class Consumer implements ConsumerContract
 
                 $channel = $this->channel($dispatcher, $options);
             } catch (Throwable $error) {
-                $this->logger->error((string) $error);
+                $this->logger->error($error->getMessage(), [
+                    'type' => get_class($error),
+                    'file' => $error->getFile(),
+                    'line' => $error->getLine(),
+                ]);
             }
         }
 
@@ -92,15 +105,37 @@ final class Consumer implements ConsumerContract
     private function channel(Dispatcher $dispatcher, array $options): AMQPChannel
     {
         $channel = $this->connect($options);
-        $handler = function (AMQPMessage $message) use ($channel, $dispatcher) {
+        $mode = $options[self::OPTION_MODE] ?? self::MODE_REJECT;
+        $requeue = filter_var($options[self::OPTION_REQUEUE] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $multiple = filter_var($options[self::OPTION_MULTIPLE] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if (!in_array($mode, [self::MODE_ACK, self::MODE_NACK, self::MODE_REJECT])) {
+            $mode = self::MODE_REJECT;
+        }
+
+        $handler = function (AMQPMessage $message) use ($channel, $mode, $multiple, $requeue, $dispatcher) {
             try {
                 $this->handle($message, $channel, $dispatcher);
 
-                $message->ack();
+                $message->ack($multiple);
             } catch (Throwable $error) {
-                $this->logger->error((string) $error);
+                switch ($mode) {
+                    case self::MODE_ACK:
+                        $message->ack($multiple);
+                        break;
+                    case self::MODE_NACK:
+                        $message->nack($requeue, $multiple);
+                        break;
+                    case self::MODE_REJECT:
+                        $message->reject($requeue);
+                        break;
+                }
 
-                $message->nack();
+                $this->logger->error($error->getMessage(), [
+                    'type' => get_class($error),
+                    'file' => $error->getFile(),
+                    'line' => $error->getLine(),
+                ]);
             }
         };
 
