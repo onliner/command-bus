@@ -28,7 +28,7 @@ final class Consumer implements ConsumerContract
         OPTION_PREFETCH = 'prefetch',
         OPTION_REQUEUE = 'requeue',
         OPTION_MULTIPLE = 'multiple',
-        OPTION_MODE = self::MODE_REJECT
+        OPTION_MODE = 'mode'
     ;
 
     private const
