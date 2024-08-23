@@ -15,24 +15,15 @@ final class MiddlewareResolver implements Resolver
      */
     private array $stack = [];
 
-    /**
-     * @param Resolver   $resolver
-     */
-    public function __construct(private Resolver $resolver)
-    {
-    }
+    public function __construct(
+        private Resolver $resolver,
+    ) {}
 
-    /**
-     * @param Middleware $middleware
-     */
     public function register(Middleware $middleware): void
     {
         $this->stack[] = $middleware;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function resolve(object $command): callable
     {
         $handler = $this->resolver->resolve($command);

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
-use Exception;
 use InvalidArgumentException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
@@ -16,18 +15,14 @@ class Connector
     private ?PCNTLHeartbeatSender $heartbeats = null;
 
     /**
-     * @param array<array<mixed>>      $hosts
+     * @param array<array<mixed>> $hosts
      * @param array<string|int, mixed> $options
      */
-    public function __construct(private array $hosts, private array $options)
-    {
-    }
+    public function __construct(
+        private array $hosts,
+        private array $options,
+    ) {}
 
-    /**
-     * @param string $dsn
-     *
-     * @return self
-     */
     public static function create(string $dsn): self
     {
         if (!$components = parse_url($dsn)) {
@@ -58,10 +53,6 @@ class Connector
         return new self([$components], $options);
     }
 
-    /**
-     * @return AMQPChannel
-     * @throws Exception
-     */
     public function connect(): AMQPChannel
     {
         if (isset($this->channel) && $this->channel->is_open()) {

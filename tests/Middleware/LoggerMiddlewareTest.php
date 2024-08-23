@@ -19,8 +19,7 @@ class LoggerMiddlewareTest extends TestCase
         $logger = self::createMock(LoggerInterface::class);
         $logger
             ->expects(self::never())
-            ->method('log')
-        ;
+            ->method('log');
 
         $dispatcher = (new Builder())
             ->handle(Command\Hello::class, function () {})
@@ -32,13 +31,16 @@ class LoggerMiddlewareTest extends TestCase
 
     public function testLogErrors(): void
     {
-        $level  = LogLevel::INFO;
+        $level = LogLevel::INFO;
         $logger = self::createMock(LoggerInterface::class);
         $logger
             ->expects(self::once())
             ->method('log')
-            ->with($level, 'expected', [])
-        ;
+            ->with($level, 'expected', [
+                'type' => LogicException::class,
+                'file' => __FILE__,
+                'line' => 47,
+            ]);
 
         $dispatcher = (new Builder())
             ->handle(Command\Hello::class, function () {

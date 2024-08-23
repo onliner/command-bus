@@ -6,37 +6,24 @@ namespace Onliner\CommandBus\Remote;
 
 use Onliner\CommandBus\Context;
 use Onliner\CommandBus\Middleware;
+use Onliner\CommandBus\Remote\AMQP\Packager;
 
 final class RemoteMiddleware implements Middleware
 {
     /**
-     * @param Gateway       $gateway
      * @param array<string> $local
      */
-    public function __construct(private Gateway $gateway, private array $local = [])
-    {
-    }
+    public function __construct(
+        private Gateway $gateway,
+        private array $local = [],
+    ) {}
 
-    /**
-     * {@inheritDoc}
-     */
     public function call(object $message, Context $context, callable $next): void
     {
-        if ($this->isLocal(get_class($message), $context)) {
+        if ($context->has(Packager::OPTION_LOCAL) || in_array(get_class($message), $this->local)) {
             $next($message, $context);
         } else {
             $this->gateway->send($message, $context);
         }
-    }
-
-    /**
-     * @param string  $class
-     * @param Context $context
-     *
-     * @return bool
-     */
-    private function isLocal(string $class, Context $context): bool
-    {
-        return $context->isLocal() || in_array($class, $this->local);
     }
 }

@@ -11,16 +11,13 @@ use Throwable;
 final class RetryMiddleware implements Middleware
 {
     /**
-     * @param Policy                $default
      * @param array<string, Policy> $policies
      */
-    public function __construct(private Policy $default, private array $policies)
-    {
-    }
+    public function __construct(
+        private Policy $default,
+        private array $policies,
+    ) {}
 
-    /**
-     * {@inheritDoc}
-     */
     public function call(object $message, Context $context, callable $next): void
     {
         try {
@@ -31,11 +28,6 @@ final class RetryMiddleware implements Middleware
         }
     }
 
-    /**
-     * @param object $message
-     *
-     * @return Policy
-     */
     private function policy(object $message): Policy
     {
         return $this->policies[get_class($message)] ?? $this->default;

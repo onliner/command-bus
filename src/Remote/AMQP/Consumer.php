@@ -5,23 +5,30 @@ declare(strict_types=1);
 namespace Onliner\CommandBus\Remote\AMQP;
 
 use Onliner\CommandBus\Dispatcher;
-use Onliner\CommandBus\Remote\Consumer;
-use Onliner\CommandBus\Remote\Envelope;
+use Onliner\CommandBus\Remote\Consumer as ConsumerContract;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Exception\AMQPConnectionClosedException;
 use PhpAmqpLib\Exception\AMQPIOException;
 use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Wire\AMQPAbstractCollection;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;
 
-final class AMQPConsumer implements Consumer
+final class Consumer implements ConsumerContract
 {
+    public const
+        MODE_ACK = 'ack',
+        MODE_NACK = 'nack',
+        MODE_REJECT = 'reject'
+    ;
+
     public const
         OPTION_ATTEMPTS = 'attempts',
         OPTION_INTERVAL = 'interval',
-        OPTION_PREFETCH = 'prefetch'
+        OPTION_PREFETCH = 'prefetch',
+        OPTION_REQUEUE = 'requeue',
+        OPTION_MULTIPLE = 'multiple',
+        OPTION_MODE = self::MODE_REJECT
     ;
 
     private const
@@ -37,40 +44,27 @@ final class AMQPConsumer implements Consumer
      */
     private array $queues = [];
 
-    /**
-     * @param Connector            $connector
-     * @param Exchange             $exchange
-     * @param LoggerInterface|null $logger
-     */
     public function __construct(
         private Connector $connector,
-        private Exchange $exchange,
-        LoggerInterface $logger = null
+        private Packager $packager,
+        ?LoggerInterface $logger = null,
     ) {
         $this->logger = $logger ?? new NullLogger();
     }
 
     /**
-     * @param string $pattern
-     *
-     * @return void
+     * @param string|array<string> $bindings
      */
-    public function listen(string $pattern): void
+    public function listen(string $name, array|string $bindings = [], ?Flags $flags = null): void
     {
-        $this->consume(new Queue($pattern, $pattern, $this->exchange->flags()));
+        $this->consume(new Queue($name, (array) $bindings, $flags ?? Flags::default()));
     }
 
-    /**
-     * @param Queue $queue
-     */
     public function consume(Queue $queue): void
     {
         $this->queues[] = $queue;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function run(Dispatcher $dispatcher, array $options = []): void
     {
         $this->running = true;
@@ -89,45 +83,64 @@ final class AMQPConsumer implements Consumer
 
                 $channel = $this->channel($dispatcher, $options);
             } catch (Throwable $error) {
-                $this->logger->error((string) $error);
+                $this->logger->error($error->getMessage(), [
+                    'type' => get_class($error),
+                    'file' => $error->getFile(),
+                    'line' => $error->getLine(),
+                ]);
             }
         }
 
         $channel->close();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function stop(): void
     {
         $this->running = false;
     }
 
     /**
-     * @param Dispatcher           $dispatcher
      * @param array<string, mixed> $options
-     *
-     * @return AMQPChannel
-     * @throws AMQPIOException
      */
     private function channel(Dispatcher $dispatcher, array $options): AMQPChannel
     {
         $channel = $this->connect($options);
-        $handler = function (AMQPMessage $message) use ($dispatcher) {
+        $mode = $options[self::OPTION_MODE] ?? self::MODE_REJECT;
+        $requeue = filter_var($options[self::OPTION_REQUEUE] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $multiple = filter_var($options[self::OPTION_MULTIPLE] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if (!in_array($mode, [self::MODE_ACK, self::MODE_NACK, self::MODE_REJECT])) {
+            $mode = self::MODE_REJECT;
+        }
+
+        $handler = function (AMQPMessage $message) use ($channel, $mode, $multiple, $requeue, $dispatcher) {
             try {
-                $this->handle($message, $dispatcher);
+                $this->handle($message, $channel, $dispatcher);
+
+                $message->ack($multiple);
             } catch (Throwable $error) {
-                $this->logger->error((string) $error);
-            } finally {
-                $message->ack();
+                switch ($mode) {
+                    case self::MODE_ACK:
+                        $message->ack($multiple);
+                        break;
+                    case self::MODE_NACK:
+                        $message->nack($requeue, $multiple);
+                        break;
+                    case self::MODE_REJECT:
+                        $message->reject($requeue);
+                        break;
+                }
+
+                $this->logger->error($error->getMessage(), [
+                    'type' => get_class($error),
+                    'file' => $error->getFile(),
+                    'line' => $error->getLine(),
+                ]);
             }
         };
 
-        $this->exchange->declare($channel);
-
         foreach ($this->queues as $queue) {
-            $queue->consume($channel, $this->exchange, $handler);
+            $queue->consume($channel, $handler);
         }
 
         return $channel;
@@ -135,9 +148,6 @@ final class AMQPConsumer implements Consumer
 
     /**
      * @param array<string, mixed> $options
-     *
-     * @return AMQPChannel
-     * @throws AMQPIOException
      */
     private function connect(array $options): AMQPChannel
     {
@@ -170,39 +180,18 @@ final class AMQPConsumer implements Consumer
         throw new AMQPIOException();
     }
 
-    /**
-     * @param AMQPMessage $message
-     * @param Dispatcher  $dispatcher
-     *
-     * @return void
-     */
-    private function handle(AMQPMessage $message, Dispatcher $dispatcher): void
+    private function handle(AMQPMessage $message, AMQPChannel $channel, Dispatcher $dispatcher): void
     {
-        $headers = $message->get('application_headers');
-
-        if (!$headers instanceof AMQPAbstractCollection) {
-            $this->logger->warning('Message headers not found.');
-
-            return;
-        }
-
-        $headers = array_replace($headers->getNativeData(), [
-            Exchange::HEADER_EXCHANGE     => $message->getExchange(),
-            Exchange::HEADER_ROUTING_KEY  => $message->getRoutingKey(),
-            Exchange::HEADER_CONSUMER_TAG => $message->getConsumerTag(),
-            Exchange::HEADER_DELIVERY_TAG => $message->getDeliveryTag(),
-            Exchange::HEADER_REDELIVERED  => $message->isRedelivered(),
-        ]);
-
-        if (!isset($headers[Exchange::HEADER_MESSAGE_TYPE])) {
-            $this->logger->warning(sprintf('Header "%s" not found in message.', Exchange::HEADER_MESSAGE_TYPE));
+        if ($message->isRedelivered()) {
+            $channel->basic_publish(
+                new AMQPMessage($message->body, $message->get_properties()),
+                (string) $message->getExchange(),
+                (string) $message->getRoutingKey(),
+            );
 
             return;
         }
 
-        /** @var class-string $class */
-        $class = $headers[Exchange::HEADER_MESSAGE_TYPE];
-
-        $dispatcher->dispatch(new Envelope($class, $message->getBody(), $headers));
+        $dispatcher->dispatch($this->packager->unpack($message));
     }
 }

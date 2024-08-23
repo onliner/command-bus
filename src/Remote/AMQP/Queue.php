@@ -11,41 +11,36 @@ use PhpAmqpLib\Wire\AMQPTable;
 final class Queue
 {
     public const
-        MAX_LENGTH   = 'x-max-length',
-        MAX_PRIORITY = 'x-max-priority',
-        MESSAGE_TTL  = 'x-message-ttl',
-        DEAD_LETTER  = 'x-dead-letter-exchange'
+        MAX_LENGTH = 'x-max-length',
+        MESSAGE_TTL = 'x-message-ttl',
+        DEAD_LETTER = 'x-dead-letter-exchange',
+        MAX_PRIORITY = 'x-max-priority'
     ;
 
-    private string $pattern;
-    private AMQPFlags $flags;
-
     /**
-     * @param string                $name
-     * @param string|null           $pattern
-     * @param AMQPFlags|null        $flags
+     * @param array<string> $bindings
      * @param array<string, string> $args
      */
     public function __construct(
-        private string $name,
-        string $pattern = null,
-        AMQPFlags $flags = null,
-        private array $args = []
-    ) {
-        $this->pattern = $pattern ?? $name;
-        $this->flags   = $flags ?? AMQPFlags::default();
-    }
+        public string $name,
+        private array $bindings,
+        public Flags $flags,
+        public array $args = [],
+    ) {}
 
     /**
      * @param array<string, mixed> $options
-     *
-     * @return self
      */
     public static function create(array $options): self
     {
         $pattern = $options['pattern'] ?? '#';
-        $name = $options['queue'] ?? $pattern;
+        $name = $options['name'] ?? $pattern;
+        $bindings = $options['bindings'] ?? [];
         $args = $options['args'] ?? [];
+
+        if (is_string($bindings)) {
+            $bindings = [$bindings];
+        }
 
         if (!is_string($name)) {
             throw new InvalidArgumentException('Queue name must be a string');
@@ -55,67 +50,49 @@ final class Queue
             throw new InvalidArgumentException('Queue pattern must be a string or null');
         }
 
+        if (!is_array($bindings)) {
+            throw new InvalidArgumentException('Queue binding must be an array');
+        }
+
         if (!is_array($args)) {
             throw new InvalidArgumentException('Queue arguments must be an array');
         }
 
-        return new self($name, $pattern, AMQPFlags::compute($options), $args);
+        if (array_is_list($bindings)) {
+            $bindings = array_fill_keys($bindings, $pattern);
+        }
+
+        return new self($name, $bindings, Flags::compute($options), $args);
     }
 
-    /**
-     * @return string
-     */
-    public function name(): string
-    {
-        return $this->name;
-    }
-
-    /**
-     * @return string
-     */
-    public function pattern(): string
-    {
-        return $this->pattern;
-    }
-
-    /**
-     * @param int $flag
-     *
-     * @return bool
-     */
     public function is(int $flag): bool
     {
         return $this->flags->is($flag);
     }
 
-    /**
-     * @param AMQPChannel $channel
-     * @param Exchange    $exchange
-     * @param callable    $handler
-     *
-     * @return void
-     */
-    public function consume(AMQPChannel $channel, Exchange $exchange, callable $handler): void
+    public function consume(AMQPChannel $channel, callable $handler): void
     {
         $channel->queue_declare(
             $this->name,
-            $this->flags->is(AMQPFlags::PASSIVE),
-            $this->flags->is(AMQPFlags::DURABLE),
-            $this->flags->is(AMQPFlags::EXCLUSIVE),
-            $this->flags->is(AMQPFlags::DELETE),
-            $this->flags->is(AMQPFlags::NO_WAIT),
-            new AMQPTable($this->args)
+            $this->is(Flags::PASSIVE),
+            $this->is(Flags::DURABLE),
+            $this->is(Flags::EXCLUSIVE),
+            $this->is(Flags::DELETE),
+            $this->is(Flags::NO_WAIT),
+            new AMQPTable($this->args),
         );
 
-        $channel->queue_bind($this->name, $exchange->name(), $this->pattern);
+        foreach ($this->bindings as $exchange => $pattern) {
+            $channel->queue_bind($this->name, $exchange, $pattern);
+        }
 
         $channel->basic_consume(
             $this->name,
             '',
-            $this->flags->is(AMQPFlags::NO_LOCAL),
-            $this->flags->is(AMQPFlags::NO_ACK),
-            $this->flags->is(AMQPFlags::EXCLUSIVE),
-            $this->flags->is(AMQPFlags::NO_WAIT),
+            $this->is(Flags::NO_LOCAL),
+            $this->is(Flags::NO_ACK),
+            $this->is(Flags::EXCLUSIVE),
+            $this->is(Flags::NO_WAIT),
             $handler
         );
     }

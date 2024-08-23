@@ -6,6 +6,4 @@ namespace Onliner\CommandBus\Exception;
 
 use LogicException;
 
-class CommandBusException extends LogicException
-{
-}
+class CommandBusException extends LogicException {}

@@ -12,25 +12,21 @@ use Throwable;
 
 final class LoggerMiddleware implements Middleware
 {
-    /**
-     * @param LoggerInterface $logger
-     * @param string          $level
-     */
-    public function __construct(private LoggerInterface $logger, private string $level = LogLevel::ERROR)
-    {
-    }
+    public function __construct(
+        private LoggerInterface $logger,
+        private string $level = LogLevel::ERROR,
+    ) {}
 
-    /**
-     * {@inheritDoc}
-     *
-     * @throws Throwable
-     */
     public function call(object $message, Context $context, callable $next): void
     {
         try {
             $next($message, $context);
         } catch (Throwable $error) {
-            $this->logger->log($this->level, $error->getMessage());
+            $this->logger->log($this->level, $error->getMessage(), [
+                'type' => get_class($error),
+                'file' => $error->getFile(),
+                'line' => $error->getLine(),
+            ]);
 
             throw $error;
         }

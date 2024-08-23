@@ -16,31 +16,18 @@ final class MemoryTransport implements Transport, Consumer
      * @var array<string, array<Envelope>>
      */
     private array $envelopes = [];
-
-    /**
-     * @var bool
-     */
     private bool $running = false;
 
-    /**
-     * {@inheritDoc}
-     */
     public function send(Envelope $envelope): void
     {
         $this->envelopes[$envelope->class][] = $envelope;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function consume(): Consumer
     {
         return $this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function run(Dispatcher $dispatcher, array $options = []): void
     {
         if ($this->running) {
@@ -62,33 +49,22 @@ final class MemoryTransport implements Transport, Consumer
         } while ($this->isRunning());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public function stop(): void
     {
         $this->running = false;
     }
 
-    /**
-     * @return void
-     */
     public function clear(): void
     {
         $this->envelopes = [];
     }
 
-    /**
-     * @return bool
-     */
     public function empty(): bool
     {
         return empty($this->envelopes);
     }
 
     /**
-     * @param string $type
-     *
      * @return array<Envelope>
      */
     public function receive(string $type): array
@@ -96,9 +72,6 @@ final class MemoryTransport implements Transport, Consumer
         return $this->envelopes[$type] ?? [];
     }
 
-    /**
-     * @return bool
-     */
     public function isRunning(): bool
     {
         return $this->running;

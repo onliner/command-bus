@@ -34,8 +34,7 @@ class RetryExtensionTest extends TestCase
         $policy = self::createMock(Policy::class);
         $policy
             ->expects(self::once())
-            ->method('retry')
-        ;
+            ->method('retry');
 
         $extension = new RetryExtension();
         $extension->policy(Command\Hello::class, $policy);

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Onliner\CommandBus\Remote\AMQP;
 
-class Headers
+final class Headers
 {
-    public const DELAY = 'x-delay';
-    public const PRIORITY = 'x-priority';
+    public const
+        DELAY = 'x-delay',
+        PRIORITY = 'x-priority',
+        MESSAGE_TYPE = 'x-message-type'
+    ;
 }

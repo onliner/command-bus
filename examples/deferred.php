@@ -9,22 +9,16 @@ require __DIR__ . '/../vendor/autoload.php';
 
 class Task
 {
-    public $task;
-
-    public function __construct(string $task)
-    {
-        $this->task = $task;
-    }
+    public function __construct(
+        public string $task,
+    ) {}
 }
 
 class ResultMessage
 {
-    public $message;
-
-    public function __construct(string $message)
-    {
-        $this->message = $message;
-    }
+    public function __construct(
+        public string $message,
+    ) {}
 }
 
 class TaskHandler
@@ -61,4 +55,3 @@ $dispatcher->dispatch(new Task('build report'));
  * Task: build report processing end
  * Result: success
  */
-
