@@ -7,12 +7,12 @@ namespace Onliner\CommandBus\Remote\AMQP;
 use InvalidArgumentException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Connection\Heartbeat\PCNTLHeartbeatSender;
+use PhpAmqpLib\Connection\Heartbeat;
 
 class Connector
 {
     private ?AMQPChannel $channel = null;
-    private ?PCNTLHeartbeatSender $heartbeats = null;
+    private ?Heartbeat\AbstractSignalHeartbeatSender $heartbeats = null;
 
     /**
      * @param array<array<mixed>> $hosts
@@ -63,7 +63,12 @@ class Connector
         $connection = AMQPStreamConnection::create_connection($this->hosts, $this->options);
 
         if ($connection->getHeartbeat() > 0) {
-            $this->heartbeats = new PCNTLHeartbeatSender($connection);
+            $heartbeatClass = match ($this->options['heartbeat_sender'] ?? null) {
+                'sig' => Heartbeat\SIGHeartbeatSender::class,
+                default => Heartbeat\PCNTLHeartbeatSender::class,
+            };
+
+            $this->heartbeats = new $heartbeatClass($connection);
             $this->heartbeats->register();
         }
 
