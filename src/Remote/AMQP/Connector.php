@@ -63,12 +63,11 @@ class Connector
         $connection = AMQPStreamConnection::create_connection($this->hosts, $this->options);
 
         if ($connection->getHeartbeat() > 0) {
-            $heartbeatClass = match ($this->options['heartbeat_sender'] ?? null) {
-                'sig' => Heartbeat\SIGHeartbeatSender::class,
-                default => Heartbeat\PCNTLHeartbeatSender::class,
+            $this->heartbeats = match ($this->options['heartbeat_sender'] ?? null) {
+                'sig' => new Heartbeat\SIGHeartbeatSender($connection),
+                default => new Heartbeat\PCNTLHeartbeatSender($connection),
             };
 
-            $this->heartbeats = new $heartbeatClass($connection);
             $this->heartbeats->register();
         }
 
