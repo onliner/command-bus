@@ -12,7 +12,11 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5|^9.0",
-        "phpstan/phpstan": "^1.10"
+        "phpstan/phpstan": "^1.10",
+        "sentry/sentry": "^3.0 || ^4.0"
+    },
+    "suggest": {
+        "sentry/sentry": "Required to use the sentry middleware."
     },
     "autoload": {
         "psr-4": {
