@@ -62,7 +62,7 @@ class Connector
         /** @var AMQPStreamConnection $connection */
         $connection = AMQPStreamConnection::create_connection($this->hosts, $this->options);
 
-        if ($connection->getHeartbeat() > 0) {
+        if (PHP_SAPI === 'cli' && $connection->getHeartbeat() > 0) {
             $this->heartbeats = match ($this->options['heartbeat_sender'] ?? null) {
                 'sig' => new Heartbeat\SIGHeartbeatSender($connection),
                 default => new Heartbeat\PCNTLHeartbeatSender($connection),
