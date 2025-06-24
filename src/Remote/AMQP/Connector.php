@@ -50,6 +50,10 @@ class Connector
             parse_str($components['query'], $options);
         }
 
+        if (PHP_SAPI !== 'cli') {
+            $options['heartbeat'] = 0;
+        }
+
         return new self([$components], $options);
     }
 
@@ -62,7 +66,7 @@ class Connector
         /** @var AMQPStreamConnection $connection */
         $connection = AMQPStreamConnection::create_connection($this->hosts, $this->options);
 
-        if (PHP_SAPI === 'cli' && $connection->getHeartbeat() > 0) {
+         if ($connection->getHeartbeat() > 0) {
             $this->heartbeats = match ($this->options['heartbeat_sender'] ?? null) {
                 'sig' => new Heartbeat\SIGHeartbeatSender($connection),
                 default => new Heartbeat\PCNTLHeartbeatSender($connection),
