@@ -9,6 +9,8 @@ use Onliner\CommandBus\Extension;
 
 final class RemoteExtension implements Extension
 {
+    private const SORT = 100;
+
     private Transport $transport;
     private Serializer $serializer;
 
@@ -19,8 +21,11 @@ final class RemoteExtension implements Extension
         Envelope::class,
     ];
 
-    public function __construct(?Transport $transport = null, ?Serializer $serializer = null)
-    {
+    public function __construct(
+        ?Transport $transport = null,
+        ?Serializer $serializer = null,
+        private int $sort = self::SORT,
+    ) {
         $this->transport = $transport ?? new Transport\MemoryTransport();
         $this->serializer = $serializer ?? new Serializer\NativeSerializer();
     }
@@ -38,7 +43,7 @@ final class RemoteExtension implements Extension
 
         $gateway = new Gateway($this->transport, $this->serializer);
 
-        $builder->middleware(new RemoteMiddleware($gateway, $this->local));
+        $builder->middleware(new RemoteMiddleware($gateway, $this->local), $this->sort);
         $builder->handle(Envelope::class, [$gateway, 'receive']);
     }
 }

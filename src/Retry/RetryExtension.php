@@ -9,6 +9,8 @@ use Onliner\CommandBus\Extension;
 
 final class RetryExtension implements Extension
 {
+    private const SORT = 100;
+
     private Policy $default;
 
     /**
@@ -16,8 +18,10 @@ final class RetryExtension implements Extension
      */
     private array $policies = [];
 
-    public function __construct(?Policy $default = null)
-    {
+    public function __construct(
+        ?Policy $default = null,
+        private int $sort = self::SORT,
+    ) {
         $this->default = $default ?? new Policy\ThrowPolicy();
     }
 
@@ -28,6 +32,6 @@ final class RetryExtension implements Extension
 
     public function setup(Builder $builder): void
     {
-        $builder->middleware(new RetryMiddleware($this->default, $this->policies));
+        $builder->middleware(new RetryMiddleware($this->default, $this->policies), $this->sort);
     }
 }
