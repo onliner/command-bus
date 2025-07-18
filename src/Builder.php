@@ -15,7 +15,7 @@ final class Builder
     private array $handlers = [];
 
     /**
-     * @var array<string, Middleware>
+     * @var array<int, array<Middleware>>
      */
     private array $middleware = [];
 
@@ -31,9 +31,9 @@ final class Builder
         return $this;
     }
 
-    public function middleware(Middleware $middleware): self
+    public function middleware(Middleware $middleware, int $sort = 0): self
     {
-        $this->middleware[get_class($middleware)] = $middleware;
+        $this->middleware[$sort][] = $middleware;
 
         return $this;
     }
@@ -60,8 +60,12 @@ final class Builder
         if (!empty($this->middleware)) {
             $resolver = new MiddlewareResolver($resolver);
 
-            foreach ($this->middleware as $item) {
-                $resolver->register($item);
+            ksort($this->middleware);
+
+            foreach ($this->middleware as $middlewares) {
+                foreach ($middlewares as $item) {
+                    $resolver->register($item);
+                }
             }
         }
 
